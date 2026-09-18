@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Text, type TextStyle } from 'react-native';
+import { StyleSheet, Text, View, type TextStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, typography } from '../theme';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -8,14 +10,42 @@ interface PriceTextProps {
   style?: TextStyle;
 }
 
-// Renders a formatted price via Intl (ADR-M9), styled with the numeric mono type scale
-// (ADR-M10). The green/red flash-on-change treatment (ADR-M4, react-native-reanimated) is
-// layered on top of this component in Phase 4 — this covers correct, locale-aware display.
+const FLASH_DURATION_MS = 400;
+
+// Flashes green on increase, red on decrease (ADR-M4) — a background overlay animated on
+// the UI thread via a worklet, so the flash stays smooth independent of JS-thread load at
+// a 100ms update cadence. The overlay's opacity animates, not the text's own opacity, so
+// the price stays fully legible throughout the flash.
 export function PriceText({ value, style }: PriceTextProps) {
   const { i18n } = useTranslation();
+  const previousValue = useRef(value);
+  const flashOpacity = useSharedValue(0);
+  const [direction, setDirection] = useState<'up' | 'down' | null>(null);
+
+  useEffect(() => {
+    if (value !== previousValue.current) {
+      setDirection(value > previousValue.current ? 'up' : 'down');
+      previousValue.current = value;
+      flashOpacity.value = 0.35;
+      flashOpacity.value = withTiming(0, { duration: FLASH_DURATION_MS });
+    }
+  }, [value, flashOpacity]);
+
+  const flashStyle = useAnimatedStyle(() => ({
+    opacity: flashOpacity.value,
+    backgroundColor: direction === 'down' ? colors.signal.negative : colors.signal.positive,
+  }));
+
   return (
-    <Text style={[{ color: colors.text.primary, ...typography.priceDisplay }, style]}>
-      {formatPrice(value, i18n.language)}
-    </Text>
+    <View style={styles.container}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, flashStyle]} />
+      <Text style={[styles.text, style]}>{formatPrice(value, i18n.language)}</Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { position: 'relative' },
+  overlay: { borderRadius: 4 },
+  text: { color: colors.text.primary, ...typography.priceDisplay },
+});
