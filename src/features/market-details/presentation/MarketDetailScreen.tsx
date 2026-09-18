@@ -10,7 +10,7 @@ import { PriceText } from '../../../core/components/PriceText';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
 import { useMarketData } from '../../../core/hooks/useMarketData';
 import { usePairsMeta } from '../../../core/hooks/usePairsMeta';
-import { colors, spacing, typography } from '../../../core/theme';
+import { colors, radius, spacing, typography } from '../../../core/theme';
 import { formatCompactNumber } from '../../../core/utils/formatCompactNumber';
 import { formatPairDisplayName } from '../../../core/utils/formatPairDisplayName';
 import { formatPrice } from '../../../core/utils/formatPrice';
@@ -18,6 +18,7 @@ import { formatPercent } from '../../../core/utils/formatPercent';
 import { parseBaseAsset } from '../../../core/utils/parseBaseAsset';
 import type { PairMeta } from '../../../contracts/schemas';
 import type { RootStackParamList } from '../../../navigation/types';
+import { MarketDepthChart } from './MarketDepthChart';
 import { OrderBookView } from './OrderBookView';
 
 const LIQUIDITY_GAP_MEDIUM_THRESHOLD = 5;
@@ -138,6 +139,7 @@ export function MarketDetailScreen({ route }: Props) {
             </View>
 
             <View style={styles.depthPanel}>
+              <MarketDepthChart />
               <View style={styles.depthHeaderRow}>
                 <Text style={styles.depthTitle}>{t('marketDepth')}</Text>
                 {liquidityGap && (
@@ -163,23 +165,25 @@ export function MarketDetailScreen({ route }: Props) {
                   </View>
                 )}
               </View>
-              <View style={styles.statRow}>
-                <StatCell
-                  label={t('liquidityGap')}
-                  value={
-                    liquidityGap
-                      ? t(LIQUIDITY_GAP_LABEL_KEY[liquidityGap.level], {
-                          value: liquidityGap.gapPercent.toFixed(2),
-                        })
-                      : '—'
-                  }
-                  valueColor={liquidityGapColor}
-                />
-                <StatCell
-                  label={t('pressureLabel')}
-                  value={pressureLabel ?? '—'}
-                  valueColor={pressureColor}
-                />
+              <View style={styles.depthLegendBox}>
+                <View style={styles.statRow}>
+                  <StatCell
+                    label={t('liquidityGap')}
+                    value={
+                      liquidityGap
+                        ? t(LIQUIDITY_GAP_LABEL_KEY[liquidityGap.level], {
+                            value: liquidityGap.gapPercent.toFixed(2),
+                          })
+                        : '—'
+                    }
+                    valueColor={liquidityGapColor}
+                  />
+                  <StatCell
+                    label={t('pressureLabel')}
+                    value={pressureLabel ?? '—'}
+                    valueColor={pressureColor}
+                  />
+                </View>
               </View>
             </View>
 
@@ -244,8 +248,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginHorizontal: spacing.lg,
     backgroundColor: colors.background.card,
-    borderRadius: 8,
+    borderRadius: radius.card,
     padding: spacing.lg,
+    minHeight: 220,
+    overflow: 'hidden',
+    justifyContent: 'space-between',
   },
   depthHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   depthTitle: { color: colors.text.label, ...typography.labelCaps },
@@ -253,4 +260,9 @@ const styles = StyleSheet.create({
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
+  depthLegendBox: {
+    backgroundColor: 'rgba(11,20,32,0.75)',
+    borderRadius: radius.card,
+    padding: spacing.md,
+  },
 });
