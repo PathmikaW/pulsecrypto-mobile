@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { ChangeBadge } from '../../../core/components/ChangeBadge';
 import { ConnectionIndicator } from '../../../core/components/ConnectionIndicator';
@@ -28,6 +29,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Terminal'>;
 // when reached directly via the bottom nav's "Terminal" tab.
 export function MarketDetailScreen({ route }: Props) {
   const { t, i18n } = useTranslation(['market-details', 'common']);
+  const insets = useSafeAreaInsets();
   const pairsMetaQuery = usePairsMeta();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -62,7 +64,7 @@ export function MarketDetailScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => setDrawerOpen(true)} hitSlop={12} accessibilityLabel={t('common:menu')}>
             <Ionicons name="menu" size={24} color={colors.text.primary} />
           </Pressable>

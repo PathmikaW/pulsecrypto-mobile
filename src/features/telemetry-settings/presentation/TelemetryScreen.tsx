@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { ConnectionIndicator } from '../../../core/components/ConnectionIndicator';
 import { colors, spacing, typography } from '../../../core/theme';
@@ -13,10 +14,11 @@ import { PerformanceDashboardCard } from './PerformanceDashboardCard';
 // destination for both.
 export function TelemetryScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
-      <View style={styles.topAppBar}>
+      <View style={[styles.topAppBar, { paddingTop: insets.top + spacing.md }]}>
         {/* The TopAppBar row shows "BTC/USDT" + "LIVE" in the Figma source, reading as a
         leftover from a shared header component - kept structurally but with a
         screen-appropriate title and the real, shared ConnectionIndicator instead of a
