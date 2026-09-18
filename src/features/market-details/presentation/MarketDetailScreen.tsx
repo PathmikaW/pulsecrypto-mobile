@@ -25,7 +25,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Terminal'>;
 // renders whichever pair was tapped from Markets, or defaults to the first tracked pair
 // when reached directly via the bottom nav's "Terminal" tab.
 export function MarketDetailScreen({ route }: Props) {
-  const { t, i18n } = useTranslation('market-details');
+  const { t, i18n } = useTranslation(['market-details', 'common']);
   const pairsMetaQuery = usePairsMeta();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -56,7 +56,7 @@ export function MarketDetailScreen({ route }: Props) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Pressable onPress={() => setDrawerOpen(true)} hitSlop={12} accessibilityLabel="menu">
+          <Pressable onPress={() => setDrawerOpen(true)} hitSlop={12} accessibilityLabel={t('common:menu')}>
             <Ionicons name="menu" size={24} color={colors.text.primary} />
           </Pressable>
           <Text style={styles.headerTitle}>{meta?.displayName ?? pair}</Text>

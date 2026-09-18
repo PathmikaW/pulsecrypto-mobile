@@ -18,5 +18,6 @@
   },
   "telemetry": {
     "title": "System Settings & Telemetry"
-  }
+  },
+  "menu": "Menu"
 }
