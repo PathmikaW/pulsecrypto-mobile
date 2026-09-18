@@ -328,6 +328,13 @@ with `--no-verify` unless the user explicitly says to for that specific commit.
 2. Implement against the spec, matching the Figma mockup for layout/visual detail.
 3. Write tests derived from the spec's stated behavior, including a non-English-locale
    render check for any new screen.
-4. Leave everything uncommitted for review.
-5. If something in the spec or ADR seems wrong or you want to deviate, say so and wait —
+4. Verify directly before calling anything done — run the typecheck/lint/test suite
+   yourself, don't just eyeball the code (ADR-X6).
+5. Review the diff (`git status`/`git diff`), then commit with a conventional-format
+   message — no AI attribution trailer. Never push or merge; that's the user's alone.
+6. **Always end by giving the user exact terminal commands to independently verify what
+   was just built** (install/typecheck/test, and a manual check — e.g. what to tap/see in
+   the running app — if one makes sense for the feature) — don't just assert it works,
+   hand them the means to confirm it themselves, every time, not only when asked.
+7. If something in the spec or ADR seems wrong or you want to deviate, say so and wait —
    don't implement your own alternative silently.
