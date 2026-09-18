@@ -3,7 +3,6 @@
   "buyPressure": "Buy Pressure",
   "sellPressure": "Sell Pressure",
   "spread": "Spread",
-  "orderBook": "Order Book",
   "lastUpdated": "Last updated {{time}}",
   "priceHeader": "PRICE (USDT)",
   "amountHeader": "AMOUNT ({{asset}})",
@@ -24,7 +23,8 @@
   "pressureBalanced": "Balanced",
   "loadingOrderBook": "Waiting for order book data…",
   "accountDrawer": {
-    "tier": "Tier 3 Verified • ID: 882941",
+    "tierLabel": "Tier 3 Verified • ",
+    "tierId": "ID: 882941",
     "profileName": "Pro Trader",
     "account": "ACCOUNT",
     "apiKeys": "API Keys",

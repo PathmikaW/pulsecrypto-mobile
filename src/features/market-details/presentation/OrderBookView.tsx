@@ -87,7 +87,6 @@ interface OrderBookViewProps {
 // actual structure exactly (two distinct "Bids Section"/"Asks Section" frames, not one
 // shared header over a single combined list).
 export function OrderBookView({ bids, asks, baseAsset }: OrderBookViewProps) {
-  const { t } = useTranslation('market-details');
   const visibleBids = bids.slice(0, DISPLAY_DEPTH);
   const visibleAsks = asks.slice(0, DISPLAY_DEPTH);
   const maxBidQuantity = Math.max(0, ...visibleBids.map((l) => l.quantity));
@@ -95,8 +94,6 @@ export function OrderBookView({ bids, asks, baseAsset }: OrderBookViewProps) {
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>{t('orderBook')}</Text>
-
       <TableHeader baseAsset={baseAsset} />
       {visibleBids.map((level) => (
         <OrderBookRow key={`bid-${level.price}`} level={level} maxQuantity={maxBidQuantity} side="bid" />
@@ -111,12 +108,6 @@ export function OrderBookView({ bids, asks, baseAsset }: OrderBookViewProps) {
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    color: colors.text.primary,
-    ...typography.labelCaps,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
   header: {
     flexDirection: 'row',
     backgroundColor: colors.background.tableHeader,

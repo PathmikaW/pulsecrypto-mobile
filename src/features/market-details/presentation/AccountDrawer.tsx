@@ -90,22 +90,27 @@ export function AccountDrawer() {
               <Icon name="avatarPerson" size={28} color={colors.signal.positiveMuted} />
             </View>
             <Text style={styles.name}>{t('accountDrawer.profileName')}</Text>
-            <Text style={styles.tier}>{t('accountDrawer.tier')}</Text>
+            <Text style={styles.tier}>
+              {t('accountDrawer.tierLabel')}
+              <Text style={styles.tierId}>{t('accountDrawer.tierId')}</Text>
+            </Text>
           </View>
           <View style={styles.divider} />
 
-          <Text style={styles.groupLabel}>{t('accountDrawer.account')}</Text>
-          <DrawerLink icon="drawerApiKeys" label={t('accountDrawer.apiKeys')} onPress={showComingSoon} />
-          <DrawerLink icon="drawerSecurity" label={t('accountDrawer.security')} onPress={showComingSoon} />
+          <View style={styles.content}>
+            <Text style={styles.groupLabel}>{t('accountDrawer.account')}</Text>
+            <DrawerLink icon="drawerApiKeys" label={t('accountDrawer.apiKeys')} onPress={showComingSoon} />
+            <DrawerLink icon="drawerSecurity" label={t('accountDrawer.security')} onPress={showComingSoon} />
 
-          <Text style={styles.groupLabel}>{t('accountDrawer.trading')}</Text>
-          <DrawerLink
-            icon="drawerTradeHistory"
-            label={t('accountDrawer.tradeHistory')}
-            onPress={showComingSoon}
-            active
-          />
-          <DrawerLink icon="drawerSupport" label={t('accountDrawer.support')} onPress={showComingSoon} />
+            <Text style={styles.groupLabel}>{t('accountDrawer.trading')}</Text>
+            <DrawerLink
+              icon="drawerTradeHistory"
+              label={t('accountDrawer.tradeHistory')}
+              onPress={showComingSoon}
+              active
+            />
+            <DrawerLink icon="drawerSupport" label={t('accountDrawer.support')} onPress={showComingSoon} />
+          </View>
 
           <View style={styles.signOutBorder}>
             <Pressable style={styles.signOut} onPress={closeDrawer}>
@@ -144,10 +149,17 @@ const styles = StyleSheet.create({
   backdrop: { backgroundColor: 'rgba(0,0,0,0.5)' },
   panel: {
     backgroundColor: colors.background.recessed,
-    paddingHorizontal: spacing.lg,
     gap: spacing.sm,
   },
-  profile: { alignItems: 'flex-start', gap: spacing.xs, paddingBottom: spacing.lg },
+  // Horizontal padding lives on the content sections, not the panel itself, so the divider
+  // lines can span the drawer's full width edge-to-edge, matching Figma exactly.
+  content: { paddingHorizontal: spacing.lg },
+  profile: {
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
   avatar: {
     width: 48,
     height: 48,
@@ -158,6 +170,7 @@ const styles = StyleSheet.create({
   },
   name: { color: colors.text.primary, ...typography.heading },
   tier: { color: colors.text.numeric, ...typography.bodySmall },
+  tierId: { color: colors.signal.positive },
   divider: { height: 1, backgroundColor: colors.background.divider, marginBottom: spacing.md },
   groupLabel: { color: colors.text.label, ...typography.labelCaps, marginTop: spacing.md },
   link: {
@@ -174,8 +187,17 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  signOut: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+  signOut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.background.card,
+    borderRadius: radius.card,
+  },
   signOutText: { color: colors.text.primary, ...typography.body },
 });

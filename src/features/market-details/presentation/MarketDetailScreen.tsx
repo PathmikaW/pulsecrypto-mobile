@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -18,6 +18,7 @@ import { formatPercent } from '../../../core/utils/formatPercent';
 import { parseBaseAsset } from '../../../core/utils/parseBaseAsset';
 import type { PairMeta } from '../../../contracts/schemas';
 import type { RootStackParamList } from '../../../navigation/types';
+import { useUiStore } from '../../../store/uiStore';
 import { MarketDepthChart } from './MarketDepthChart';
 import { OrderBookView } from './OrderBookView';
 
@@ -46,6 +47,13 @@ export function MarketDetailScreen({ route }: Props) {
   const liveTrackedPairs = useMarketStore(useShallow((state) => Object.keys(state.pairs)));
   const pair = route.params?.pair ?? pairsMetaQuery.data?.pairs[0]?.symbol ?? liveTrackedPairs[0];
   const meta = pairsMetaQuery.data?.pairs.find((p) => p.symbol === pair);
+
+  // Telemetry's TopAppBar shows this same pair (confirmed against Figma) - kept in sync
+  // via uiStore rather than each screen re-deriving it independently.
+  const setSelectedPair = useUiStore((state) => state.setSelectedPair);
+  useEffect(() => {
+    if (pair) setSelectedPair(pair);
+  }, [pair, setSelectedPair]);
   const marketData = useMarketData(pair ?? '');
   const baseAsset = useMemo(() => parseBaseAsset(meta?.displayName, pair ?? ''), [meta?.displayName, pair]);
 
@@ -138,6 +146,8 @@ export function MarketDetailScreen({ route }: Props) {
               />
             </View>
 
+            <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
+
             <View style={styles.depthPanel}>
               <MarketDepthChart />
               <View style={styles.depthHeaderRow}>
@@ -186,8 +196,6 @@ export function MarketDetailScreen({ route }: Props) {
                 </View>
               </View>
             </View>
-
-            <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
 
             <LastUpdatedLabel lastUpdatedAt={marketData.lastUpdatedAt} />
           </>

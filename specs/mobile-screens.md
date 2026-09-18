@@ -34,7 +34,7 @@ Settings** — but only two of those four have an actual designed screen in the 
 There is no `Markets` screen (the assignment's watchlist) anywhere in the file.
 
 **Resolution (explicit user decision, not an assumption):** build everything the Figma
-file *does* contain exactly as designed, at full fidelity — including the account drawer
+file _does_ contain exactly as designed, at full fidelity — including the account drawer
 and the telemetry/settings dashboard, even though large parts of both sit outside the
 assignment's literal functional requirements. For the one thing the assignment requires
 that Figma doesn't cover — the watchlist/`Markets` screen, plus its search and favourites
@@ -46,12 +46,12 @@ given there's no backend spec behind account management or client-side throttlin
 
 ## Screen inventory (revised — five screens, not four)
 
-| Screen | Maps to | Source |
-| --- | --- | --- |
-| Markets | Assignment's "Market Watchlist" (+ Search, + Favourites) | Not in Figma — designed fresh, per `design-tokens.md` |
-| Terminal | Assignment's "Market Details," parameterized per selected pair | Figma "Trading Terminal," built at full fidelity |
+| Screen               | Maps to                                                                  | Source                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Markets              | Assignment's "Market Watchlist" (+ Search, + Favourites)                 | Not in Figma — designed fresh, per `design-tokens.md`                                                          |
+| Terminal             | Assignment's "Market Details," parameterized per selected pair           | Figma "Trading Terminal," built at full fidelity                                                               |
 | Telemetry & Settings | Not an assignment requirement — built because Figma specifies it in full | Figma "Telemetry & Settings," built at full fidelity (see ADR-M10 for real-vs-mock data treatment per control) |
-| Account drawer | Not an assignment requirement — built because Figma specifies it in full | Figma "Aside — Side Navigation Drawer," reachable from Terminal's app bar hamburger button |
+| Account drawer       | Not an assignment requirement — built because Figma specifies it in full | Figma "Aside — Side Navigation Drawer," reachable from Terminal's app bar hamburger button                     |
 
 ## Screen: Markets / Watchlist (`features/watchlist/presentation/WatchlistScreen.tsx`)
 
@@ -64,11 +64,13 @@ Figma-accurate app. It's reached via the bottom nav's "Markets" tab (present in 
 bar on every screen, just without its own designed destination).
 
 **Data sources:** `core/data`'s `MarketRepository` (via `IMarketRepository.getTrackedPairs()`
-+ `subscribe()` per pair) for live rows; `features/favourites`'s `useFavourites()` for the
-favourited set; TanStack Query's `/pairs/meta` for display name / trading status (used for
-rows that need metadata not carried on the WS payload).
+
+- `subscribe()` per pair) for live rows; `features/favourites`'s `useFavourites()` for the
+  favourited set; TanStack Query's `/pairs/meta` for display name / trading status (used for
+  rows that need metadata not carried on the WS payload).
 
 **Row contents** (`PairRow.tsx`, composes `core/components`):
+
 - Trading pair (`displayName`, e.g. "BTC / USDT")
 - Current price (`PriceText` — flashes green on increase, red on decrease, per ADR-M4)
 - 24h change (`ChangeBadge` — colored by sign, from the `@ticker` stream via WS, not
@@ -104,6 +106,7 @@ pair viewed if none is selected yet). Subscribes via `IMarketRepository.subscrib
 
 **Contents, as designed in Figma, with the assignment's required numeric fields layered on
 top where Figma only shows a qualitative equivalent:**
+
 - **Header:** pair symbol as the title (`Heading 1`, e.g. "BTC/USDT"), hamburger button
   opening the account drawer (see below), a "CONNECTED"/disconnected status pill —
   this is `ConnectionIndicator`, styled per Figma's badge (`signal.positive` fill when
@@ -159,14 +162,16 @@ decision (above) was to build everything Figma provides at full fidelity. See AD
 which of this screen's controls get real data vs. are display-only.
 
 **Header:** page title "System Settings & Telemetry" with subtitle "Real-time performance
-monitoring and data ingestion controls." (from the `Header Section` node — this is the
-real page title; note the TopAppBar row above it literally shows "BTC/USDT" + "LIVE" in the
-source file, which reads as a leftover from a shared header component rather than
-intentional content for this screen — implement the TopAppBar's structural
-layout/style as designed, but use a screen-appropriate title there instead of "BTC/USDT,"
-since carrying that over verbatim would be visibly wrong rather than faithful).
+monitoring and data ingestion controls." (from the `Header Section` node). The TopAppBar
+row above it shows the currently-selected trading pair (e.g. "BTC/USDT") — same as
+Terminal's TopAppBar — not a screen-specific title. Confirmed directly against Figma
+(2026-09-19), correcting an earlier reading of this as an unintentional leftover; it's
+real, intentional shared-header content. Shows whichever pair was last viewed on Terminal
+(defaulting the same way Terminal's own pair does, if none has been viewed yet this
+session).
 
 **Bento grid cards, in Figma's order:**
+
 1. **Data Throttling Configurator** — "Update Frequency" slider (10ms/500ms/1000ms tick
    labels), "Binary Protocol Compression" toggle, "Adaptive Polling Strategy" toggle. No
    backend support exists for per-client-configurable broadcast intervals or protocol
@@ -280,7 +285,7 @@ through `react-i18next` like every other user-facing string (ADR-M9).
 - Every interactive element (favourite toggle, search input, pair row) has an
   `accessibilityLabel` sourced from the same i18n namespace as its visible text — not a
   separate hardcoded string that could drift out of sync with a translated label.
-- `ConnectionIndicator` and the price-flash colors are not the *only* signal for their
+- `ConnectionIndicator` and the price-flash colors are not the _only_ signal for their
   respective states — color alone shouldn't carry meaning (a connection-status text label
   already satisfies this per the assignment's own requirement; price flash is a
   supplementary animation on top of the numeric value change, not a replacement for it).
@@ -292,12 +297,12 @@ through `react-i18next` like every other user-facing string (ADR-M9).
 
 No default is stated in the ADR beyond "runs on the UI thread" (ADR-M4). Absent a
 Figma-specified duration, use:
+
 - Price flash: fade to the up/down color over ~150ms, hold, fade back to neutral over
   ~400ms — brief enough not to feel laggy at a 100ms update cadence, long enough to
   actually register as a visible flash rather than a flicker.
 - Order book bar-width changes: ~200ms ease-out on width transitions.
 
-These are reasonable, testable defaults for the performance-hardening phase (ADR §6 Phase
-5) to tune — not values pulled from the mockup, since timing isn't something a static
+These are reasonable, testable defaults for the performance-hardening phase (ADR §6 Phase 5) to tune — not values pulled from the mockup, since timing isn't something a static
 Figma frame encodes. State this distinction plainly in the README rather than implying the
 numbers came from the design file.
