@@ -17,6 +17,7 @@ describe('WebSocketSource', () => {
   let sockets: MockSocket[];
   let statuses: string[];
   let messages: string[];
+  let rates: number[];
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -24,6 +25,7 @@ describe('WebSocketSource', () => {
     sockets = [];
     statuses = [];
     messages = [];
+    rates = [];
   });
 
   afterEach(() => {
@@ -36,6 +38,7 @@ describe('WebSocketSource', () => {
       staleConnectionTimeoutMs: staleMs,
       onMessage: (raw) => messages.push(raw),
       onStatusChange: (status) => statuses.push(status),
+      onMessageRate: (rate) => rates.push(rate),
       now: () => now,
       createSocket: () => {
         const socket = new MockSocket();
@@ -118,6 +121,26 @@ describe('WebSocketSource', () => {
 
     source.resumeOnForeground();
     expect(sockets).toHaveLength(2);
+
+    source.stop();
+  });
+
+  it('reports the message count received in each 1s window via onMessageRate', () => {
+    const source = createSource();
+    source.start();
+    sockets[0].onopen?.();
+
+    sockets[0].onmessage?.({ data: '1' });
+    sockets[0].onmessage?.({ data: '2' });
+    sockets[0].onmessage?.({ data: '3' });
+    jest.advanceTimersByTime(1000);
+
+    expect(rates).toEqual([3]);
+
+    sockets[0].onmessage?.({ data: '4' });
+    jest.advanceTimersByTime(1000);
+
+    expect(rates).toEqual([3, 1]);
 
     source.stop();
   });

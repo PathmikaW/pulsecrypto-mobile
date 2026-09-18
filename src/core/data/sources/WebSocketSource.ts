@@ -11,6 +11,9 @@ export interface WebSocketSourceOptions {
   staleConnectionTimeoutMs?: number;
   onMessage: (raw: string) => void;
   onStatusChange: (status: ConnectionStatus) => void;
+  /** Called once a second with the count of messages received in that window — the real
+   * WS Message Ingestion Rate figure for the telemetry screen (ADR-M10). */
+  onMessageRate?: (messagesPerSecond: number) => void;
   /** Injectable for tests — defaults to the global `WebSocket`. */
   createSocket?: (url: string) => WebSocket;
   /** Injectable clock for tests. */
@@ -27,6 +30,7 @@ export class WebSocketSource {
   private readonly staleConnectionTimeoutMs: number;
   private readonly onMessage: (raw: string) => void;
   private readonly onStatusChange: (status: ConnectionStatus) => void;
+  private readonly onMessageRate?: (messagesPerSecond: number) => void;
   private readonly createSocket: (url: string) => WebSocket;
   private readonly now: () => number;
 
@@ -34,8 +38,10 @@ export class WebSocketSource {
   private status: ConnectionStatus = 'disconnected';
   private reconnectAttempt = 0;
   private lastMessageAt = 0;
+  private messagesSinceLastRateTick = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private silenceCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private rateTimer: ReturnType<typeof setInterval> | null = null;
   private stopped = true;
   private backgroundPaused = false;
 
@@ -44,6 +50,7 @@ export class WebSocketSource {
     this.staleConnectionTimeoutMs = options.staleConnectionTimeoutMs ?? 1000;
     this.onMessage = options.onMessage;
     this.onStatusChange = options.onStatusChange;
+    this.onMessageRate = options.onMessageRate;
     this.createSocket = options.createSocket ?? ((url) => new WebSocket(url));
     this.now = options.now ?? Date.now;
   }
@@ -51,6 +58,12 @@ export class WebSocketSource {
   start(): void {
     this.stopped = false;
     this.connect();
+    if (this.onMessageRate && !this.rateTimer) {
+      this.rateTimer = setInterval(() => {
+        this.onMessageRate?.(this.messagesSinceLastRateTick);
+        this.messagesSinceLastRateTick = 0;
+      }, 1000);
+    }
   }
 
   /** Stops reconnection attempts and closes the active socket — used on app background. */
@@ -58,6 +71,10 @@ export class WebSocketSource {
     this.stopped = true;
     this.clearReconnectTimer();
     this.clearSilenceCheck();
+    if (this.rateTimer) {
+      clearInterval(this.rateTimer);
+      this.rateTimer = null;
+    }
     this.socket?.close();
     this.socket = null;
     this.setStatus('disconnected');
@@ -93,6 +110,7 @@ export class WebSocketSource {
     };
     socket.onmessage = (event) => {
       this.lastMessageAt = this.now();
+      this.messagesSinceLastRateTick += 1;
       this.onMessage(typeof event.data === 'string' ? event.data : String(event.data));
     };
     socket.onerror = () => {

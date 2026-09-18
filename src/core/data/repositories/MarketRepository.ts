@@ -9,8 +9,12 @@ import type { ConnectionStatus } from '../sources/WebSocketSource';
 interface MarketState {
   pairs: Record<TradingPairSymbol, MarketData>;
   connectionStatus: ConnectionStatus;
+  /** Real messages/sec over the last 1s window — powers the telemetry screen's "WS
+   * Message Ingestion Rate" card (ADR-M10: cheaply-real metrics get wired to real values). */
+  wsMessageRate: number;
   updatePair: (pair: TradingPairSymbol, data: MarketData) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
+  setWsMessageRate: (rate: number) => void;
 }
 
 // The WS-backed live data source (ADR-M8). `useWebSocket` is the sole writer, via
@@ -21,8 +25,10 @@ export const useMarketStore = create<MarketState>()(
     (set) => ({
       pairs: {},
       connectionStatus: 'connecting',
+      wsMessageRate: 0,
       updatePair: (pair, data) => set((state) => ({ pairs: { ...state.pairs, [pair]: data } })),
       setConnectionStatus: (status) => set({ connectionStatus: status }),
+      setWsMessageRate: (wsMessageRate) => set({ wsMessageRate }),
     }),
     {
       name: 'market-data-storage',
