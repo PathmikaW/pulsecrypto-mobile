@@ -32,6 +32,9 @@
     "trading": "TRADING",
     "tradeHistory": "Trade History",
     "support": "Support",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "close": "Close menu",
+    "comingSoonTitle": "Coming Soon",
+    "comingSoonBody": "{{feature}} isn't available yet."
   }
 }

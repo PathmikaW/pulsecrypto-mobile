@@ -1,8 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
-import { ConnectionIndicator } from '../../../core/components/ConnectionIndicator';
+import { TopAppBar } from '../../../core/components/TopAppBar';
 import { colors, spacing, typography } from '../../../core/theme';
 import { DataThrottlingCard } from './DataThrottlingCard';
 import { MicroCard } from './MicroCard';
@@ -14,18 +13,10 @@ import { PerformanceDashboardCard } from './PerformanceDashboardCard';
 // destination for both.
 export function TelemetryScreen() {
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
-      <View style={[styles.topAppBar, { paddingTop: insets.top + spacing.md }]}>
-        {/* The TopAppBar row shows "BTC/USDT" + "LIVE" in the Figma source, reading as a
-        leftover from a shared header component - kept structurally but with a
-        screen-appropriate title and the real, shared ConnectionIndicator instead of a
-        static "LIVE" badge (specs/mobile-screens.md). */}
-        <Text style={styles.topAppBarTitle}>{t('nav.telemetry')}</Text>
-        <ConnectionIndicator />
-      </View>
+      <TopAppBar title={t('nav.telemetry')} />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>{t('telemetry.title')}</Text>
@@ -62,14 +53,6 @@ export function TelemetryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTelemetry },
-  topAppBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-    backgroundColor: colors.background.recessed,
-  },
-  topAppBarTitle: { color: colors.text.primary, ...typography.heading },
   scrollContent: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xl },
   heading: { color: colors.text.primary, ...typography.headingLarge },
   subtitle: { color: colors.text.numeric, ...typography.body, marginTop: -spacing.md },

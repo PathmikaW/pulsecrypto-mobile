@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
+import { TopAppBar } from '../../../core/components/TopAppBar';
 import { colors, spacing, typography } from '../../../core/theme';
 import type { RootStackParamList } from '../../../navigation/types';
 import { PairRow } from './PairRow';
@@ -17,7 +17,6 @@ type Navigation = NativeStackNavigationProp<RootStackParamList>;
 export function WatchlistScreen() {
   const { t } = useTranslation('watchlist');
   const navigation = useNavigation<Navigation>();
-  const insets = useSafeAreaInsets();
   const { rows, searchQuery, setSearchQuery, toggleFavourite, refetch, isRefetching } = useWatchlist();
 
   const handlePairPress = useCallback(
@@ -34,7 +33,7 @@ export function WatchlistScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { paddingTop: insets.top + spacing.lg }]}>{t('title')}</Text>
+      <TopAppBar title={t('title')} />
       <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
       <View style={styles.listContainer}>
         <FlashList
@@ -54,6 +53,5 @@ export function WatchlistScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
   listContainer: { flex: 1 },
-  title: { color: colors.text.primary, ...typography.heading, padding: spacing.lg },
   empty: { color: colors.text.label, textAlign: 'center', marginTop: spacing.xxl, ...typography.body },
 });

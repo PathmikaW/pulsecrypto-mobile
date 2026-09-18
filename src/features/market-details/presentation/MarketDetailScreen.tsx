@@ -1,12 +1,10 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
-import { ConnectionIndicator } from '../../../core/components/ConnectionIndicator';
-import { Icon } from '../../../core/components/Icon';
+import { TopAppBar } from '../../../core/components/TopAppBar';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
 import { PriceText } from '../../../core/components/PriceText';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
@@ -14,12 +12,12 @@ import { useMarketData } from '../../../core/hooks/useMarketData';
 import { usePairsMeta } from '../../../core/hooks/usePairsMeta';
 import { colors, spacing, typography } from '../../../core/theme';
 import { formatCompactNumber } from '../../../core/utils/formatCompactNumber';
+import { formatPairDisplayName } from '../../../core/utils/formatPairDisplayName';
 import { formatPrice } from '../../../core/utils/formatPrice';
 import { formatPercent } from '../../../core/utils/formatPercent';
 import { parseBaseAsset } from '../../../core/utils/parseBaseAsset';
 import type { PairMeta } from '../../../contracts/schemas';
 import type { RootStackParamList } from '../../../navigation/types';
-import { AccountDrawer } from './AccountDrawer';
 import { OrderBookView } from './OrderBookView';
 
 const LIQUIDITY_GAP_MEDIUM_THRESHOLD = 5;
@@ -38,9 +36,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Terminal'>;
 // when reached directly via the bottom nav's "Terminal" tab.
 export function MarketDetailScreen({ route }: Props) {
   const { t, i18n } = useTranslation(['market-details', 'common']);
-  const insets = useSafeAreaInsets();
   const pairsMetaQuery = usePairsMeta();
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Falls back to whatever's already live/MMKV-cached in the store when /pairs/meta is
   // down or still loading — without this, a cold launch or backend outage left the pair
@@ -104,18 +100,8 @@ export function MarketDetailScreen({ route }: Props) {
 
   return (
     <View style={styles.container}>
+      <TopAppBar title={formatPairDisplayName(meta?.displayName, pair)} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
-          <Pressable onPress={() => setDrawerOpen(true)} hitSlop={12} accessibilityLabel={t('common:menu')}>
-            <Icon name="menu" size={22} color={colors.signal.positive} />
-          </Pressable>
-          <Text style={styles.headerTitle}>{meta?.displayName ?? pair}</Text>
-          <View style={styles.headerRight}>
-            <ConnectionIndicator />
-            <Icon name="livePulse" size={18} color={colors.signal.positive} />
-          </View>
-        </View>
-
         {marketData == null ? (
           <View style={styles.loadingSection}>
             <ActivityIndicator color={colors.signal.positive} />
@@ -205,7 +191,6 @@ export function MarketDetailScreen({ route }: Props) {
       </ScrollView>
 
       <BottomNavBar />
-      <AccountDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
     </View>
   );
 }
@@ -247,14 +232,6 @@ const styles = StyleSheet.create({
   },
   loadingSection: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxl },
   loadingText: { color: colors.text.label, ...typography.bodySmall },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-  },
-  headerTitle: { color: colors.text.primary, ...typography.heading },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs },
   priceLabel: { color: colors.text.label, ...typography.labelCaps },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

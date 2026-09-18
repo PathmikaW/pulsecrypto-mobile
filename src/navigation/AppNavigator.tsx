@@ -14,7 +14,17 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Terminal" screenOptions={{ headerShown: false }}>
+      <Stack.Navigator
+        initialRouteName="Terminal"
+        screenOptions={{
+          headerShown: false,
+          // These four screens are lateral tab switches (BottomNavBar), not hierarchical
+          // "go deeper" navigation - the default push/pop slide animation was the actual
+          // cause of visible lag/white-edge flicker when switching tabs. Disabling it
+          // makes tab switches instant, matching the "lightning fast, no lag" priority.
+          animation: 'none',
+        }}
+      >
         <Stack.Screen name="Terminal" component={MarketDetailScreen} />
         <Stack.Screen name="Markets" component={WatchlistScreen} />
         <Stack.Screen name="Telemetry" component={TelemetryScreen} />
