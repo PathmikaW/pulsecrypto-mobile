@@ -8,6 +8,11 @@ import { formatPrice } from '../utils/formatPrice';
 interface PriceTextProps {
   value: number;
   style?: TextStyle;
+  /** When provided, the text's steady-state color reflects this sign (green/red) instead
+   * of the default primary color — matches Figma's Terminal "LAST PRICE" treatment, which
+   * colors the price itself by 24h direction, not just a separate badge next to it. Omit
+   * for contexts (e.g. watchlist rows) that don't use this treatment. */
+  changePercent?: number;
 }
 
 const FLASH_DURATION_MS = 400;
@@ -16,11 +21,18 @@ const FLASH_DURATION_MS = 400;
 // the UI thread via a worklet, so the flash stays smooth independent of JS-thread load at
 // a 100ms update cadence. The overlay's opacity animates, not the text's own opacity, so
 // the price stays fully legible throughout the flash.
-export function PriceText({ value, style }: PriceTextProps) {
+export function PriceText({ value, style, changePercent }: PriceTextProps) {
   const { i18n } = useTranslation();
   const previousValue = useRef(value);
   const flashOpacity = useSharedValue(0);
   const [direction, setDirection] = useState<'up' | 'down' | null>(null);
+
+  const steadyStateColor =
+    changePercent == null
+      ? colors.text.primary
+      : changePercent < 0
+        ? colors.signal.negative
+        : colors.signal.positive;
 
   useEffect(() => {
     if (value !== previousValue.current) {
@@ -39,7 +51,9 @@ export function PriceText({ value, style }: PriceTextProps) {
   return (
     <View style={styles.container}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, flashStyle]} />
-      <Text style={[styles.text, style]}>{formatPrice(value, i18n.language)}</Text>
+      <Text style={[styles.text, { color: steadyStateColor }, style]}>
+        {formatPrice(value, i18n.language)}
+      </Text>
     </View>
   );
 }
