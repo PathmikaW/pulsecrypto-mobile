@@ -17,7 +17,28 @@
     "reload": "Reload"
   },
   "telemetry": {
-    "title": "System Settings & Telemetry"
+    "title": "System Settings & Telemetry",
+    "subtitle": "Real-time performance monitoring and data ingestion controls.",
+    "networkControl": "NETWORK CONTROL",
+    "dataThrottling": "Data Throttling Configurator",
+    "updateFrequency": "Update Frequency",
+    "binaryProtocolCompression": "Binary Protocol Compression",
+    "adaptivePollingStrategy": "Adaptive Polling Strategy",
+    "systemTelemetry": "SYSTEM TELEMETRY",
+    "performanceDashboard": "Performance Dashboard",
+    "reset": "RESET",
+    "healthy": "HEALTHY",
+    "jsThreadFrameRate": "JS Thread Frame Rate",
+    "wsIngestionRate": "WS Message Ingestion Rate",
+    "memoryFootprint": "Memory Footprint Tracker",
+    "gpuAcceleration": "GPU ACCELERATION",
+    "gpuAccelerationValue": "WebGL Render Pipeline: Active",
+    "apiLatency": "API LATENCY",
+    "apiLatencyValue": "Avg Ping: 14ms (London-1)",
+    "storageCache": "STORAGE CACHE",
+    "storageCacheValue": "IndexedDB: 1.2GB utilized",
+    "msgsPerSec": "msgs/sec",
+    "fps": "FPS"
   },
   "menu": "Menu"
 }
