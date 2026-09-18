@@ -7,6 +7,7 @@ import type { TradingPairSymbol } from './TradingPair';
 export interface MarketData {
   pair: TradingPairSymbol;
   price: number;
+  change24h: number;
   spread: number;
   buyPressure: number;
   sellPressure: number;

@@ -8,6 +8,7 @@ export function toMarketData(update: MarketUpdate): MarketData {
   return {
     pair: update.pair,
     price: update.price,
+    change24h: update.change24h,
     spread: update.spread,
     buyPressure: update.buyPressure,
     sellPressure: update.sellPressure,

@@ -2,7 +2,17 @@ import { marketRepository, useMarketStore } from '../../src/core/data/repositori
 import type { MarketData } from '../../src/core/domain/models/MarketData';
 
 function makeMarketData(pair: string, price: number): MarketData {
-  return { pair, price, spread: 1, buyPressure: 50, sellPressure: 50, bids: [], asks: [], lastUpdatedAt: 1 };
+  return {
+    pair,
+    price,
+    change24h: 0,
+    spread: 1,
+    buyPressure: 50,
+    sellPressure: 50,
+    bids: [],
+    asks: [],
+    lastUpdatedAt: 1,
+  };
 }
 
 describe('marketStore / marketRepository', () => {
