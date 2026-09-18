@@ -2,12 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { ChangeBadge } from '../../../core/components/ChangeBadge';
 import { ConnectionIndicator } from '../../../core/components/ConnectionIndicator';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
 import { PriceText } from '../../../core/components/PriceText';
+import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
 import { useMarketData } from '../../../core/hooks/useMarketData';
 import { usePairsMeta } from '../../../core/hooks/usePairsMeta';
 import { colors, spacing, typography } from '../../../core/theme';
@@ -29,7 +31,12 @@ export function MarketDetailScreen({ route }: Props) {
   const pairsMetaQuery = usePairsMeta();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const pair = route.params?.pair ?? pairsMetaQuery.data?.pairs[0]?.symbol;
+  // Falls back to whatever's already live/MMKV-cached in the store when /pairs/meta is
+  // down or still loading — without this, a cold launch or backend outage left the pair
+  // permanently unresolved and the screen never left its loading state, even though cached
+  // data existed (mobile-screens.md, ADR-M7).
+  const liveTrackedPairs = useMarketStore(useShallow((state) => Object.keys(state.pairs)));
+  const pair = route.params?.pair ?? pairsMetaQuery.data?.pairs[0]?.symbol ?? liveTrackedPairs[0];
   const meta = pairsMetaQuery.data?.pairs.find((p) => p.symbol === pair);
   const marketData = useMarketData(pair ?? '');
   const baseAsset = useMemo(() => parseBaseAsset(meta?.displayName, pair ?? ''), [meta?.displayName, pair]);
