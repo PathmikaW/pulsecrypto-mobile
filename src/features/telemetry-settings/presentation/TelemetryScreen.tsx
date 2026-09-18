@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
+import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { colors, typography } from '../../../core/theme';
 
 // The bento-grid dashboard (throttling configurator, live performance telemetry, stat
@@ -10,17 +11,16 @@ export function TelemetryScreen() {
   const { t } = useTranslation();
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('telemetry.title')}</Text>
+      <View style={styles.content}>
+        <Text style={styles.title}>{t('telemetry.title')}</Text>
+      </View>
+      <BottomNavBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background.screenTelemetry,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { flex: 1, backgroundColor: colors.background.screenTelemetry },
+  content: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: { color: colors.text.primary, ...typography.heading },
 });
