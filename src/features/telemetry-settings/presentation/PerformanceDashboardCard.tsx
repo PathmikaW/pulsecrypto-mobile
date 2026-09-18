@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
@@ -40,6 +41,9 @@ export function PerformanceDashboardCard() {
       </View>
 
       <View style={styles.counterSection}>
+        {/* Real Figma export still blocked by a persistent API rate limit - close Ionicons
+        stand-in for now, same swap-later approach as the throttling card's icon. */}
+        <Ionicons name="layers-outline" size={20} color={colors.signal.negativeMuted} />
         <Text style={styles.counterValue}>{messageRate}</Text>
         <Text style={styles.counterUnit}>{t('telemetry.msgsPerSec')}</Text>
         <Text style={styles.metricLabel}>{t('telemetry.wsIngestionRate')}</Text>

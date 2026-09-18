@@ -4,7 +4,8 @@ import { colors, radius, spacing, typography } from '../../../core/theme';
 
 interface MicroCardProps {
   icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
+  boxColor: string;
+  glyphColor: string;
   label: string;
   value: string;
 }
@@ -12,11 +13,14 @@ interface MicroCardProps {
 // The three small bento-grid stat cards (GPU Acceleration, API Latency, Storage Cache) -
 // static, display-only content per ADR-M10, since none of this has a real data source
 // (no GPU/render-pipeline introspection, no real latency probe, no real cache accounting).
-export function MicroCard({ icon, iconColor, label, value }: MicroCardProps) {
+// Icon shapes are interim Ionicons stand-ins - the real Figma exports are still blocked by
+// a persistent API rate limit (see TelemetryScreen); box/glyph colors are already matched
+// to the verified Figma fills (a muted box tint with a darker, same-hue glyph on top).
+export function MicroCard({ icon, boxColor, glyphColor, label, value }: MicroCardProps) {
   return (
     <View style={styles.card}>
-      <View style={[styles.iconBox, { backgroundColor: iconColor }]}>
-        <Ionicons name={icon} size={20} color={colors.background.screenTelemetry} />
+      <View style={[styles.iconBox, { backgroundColor: boxColor }]}>
+        <Ionicons name={icon} size={20} color={glyphColor} />
       </View>
       <View style={styles.textBlock}>
         <Text style={styles.label}>{label}</Text>
