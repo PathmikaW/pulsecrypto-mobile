@@ -29,6 +29,7 @@ export function DataThrottlingCard() {
           <Text style={styles.value}>{`${frequencyMs}ms`}</Text>
         </View>
         <Slider
+          style={styles.slider}
           minimumValue={MIN_FREQUENCY_MS}
           maximumValue={MAX_FREQUENCY_MS}
           step={10}
@@ -71,6 +72,7 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.signal.positive, ...typography.labelCaps },
   heading: { color: colors.text.primary, ...typography.heading, marginTop: spacing.xs },
   sliderSection: { marginTop: spacing.lg },
+  slider: { width: '100%', height: 32 },
   sliderHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   label: { color: colors.text.label, ...typography.bodySmall },
   value: { color: colors.signal.positive, ...typography.tableValueLarge },
