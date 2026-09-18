@@ -8,6 +8,43 @@ real-time updates.
 its spec in `specs/`. If no spec exists for what you're about to build, stop and write the
 spec first (or ask) — do not implement directly from this file or from memory of the ADR.
 
+## Session start protocol — run this before anything else (ADR-X6)
+
+**Do this at the start of every session — a brand-new one, one resumed after context
+compaction, or one picking this project back up after any gap.** Do not skip it because a
+conversation summary already describes this project — a summary can be wrong, stale, or
+have lost fidelity in ways that are invisible until they cause a mistake. This has already
+happened once on this project (an initial Gitflow bootstrap produced a rootless commit
+because a risk was noticed and not acted on) — this protocol exists specifically because of
+that, not as generic caution.
+
+1. **Read this entire `CLAUDE.md` file** — not just the section that looks relevant to the
+   immediate task.
+2. **Read the specific `specs/*.md` file(s) the task actually touches**, in full — for any
+   screen work, that means `mobile-screens.md` and `design-tokens.md` together, not one
+   without the other.
+3. **Check real current repository state with direct commands before assuming anything:**
+   `git status`, `git log --oneline --all --graph`, `git ls-remote origin` if remote state
+   matters to the task, and `ls`/file reads for anything about to be modified. Never
+   proceed on a conversation summary's account of what state things are in when a direct
+   check is cheap and available.
+4. **If real state doesn't match what `CLAUDE.md`/`specs`/the ADR describe** (scaffold
+   missing, unexpected branch structure, a file that should exist doesn't) — stop and flag
+   the discrepancy to the user. Don't silently "fix" it into whatever seems reasonable, and
+   don't proceed as if the mismatch weren't there.
+5. **Before declaring any structural task done — git topology, folder/dependency
+   architecture, schema changes, anything that touches more than one file in a coordinated
+   way — verify the actual resulting state directly** (`git log --graph`,
+   `git merge-base --is-ancestor`, re-reading the changed files, whatever directly confirms
+   the real outcome). Don't infer success from individual step outputs looking correct in
+   sequence — that's exactly how the rootless-commit mistake happened: each `git checkout -b`
+   reported success, and the aggregate result was still wrong.
+6. **If a risk or edge case becomes apparent mid-task, resolve it before finishing, or say
+   it out loud explicitly.** Noticing a problem and silently proceeding as if it were
+   handled is a worse outcome than not noticing it — it creates the appearance of care
+   without the substance of it. Full rationale: ADR-X6 in
+   `docs/adr/03-cross-cutting-decisions.md` (grep for `ADR-X6`, don't read the whole file).
+
 **Visual source of truth:** [Pulse Crypto Mockup — Figma](https://www.figma.com/design/JYfr5h2vC9IFKtX3vasmZk/Pulse-Crypto-Mockup?t=1Is1HymqvhvoKHab-1).
 Design tokens (colors, typography, spacing, radii) are **already extracted and verified**
 — pulled from Figma's REST API, not guessed. Implement `core/theme/` directly from
@@ -65,19 +102,24 @@ quality — not only whether the app runs. Concretely, this means:
 ## Authority, in order
 
 1. `specs/*.md` — the exact behavior to implement for a given unit of work.
-2. `docs/PulseCrypto-ADR.md` — the full rationale. Read this when a spec is ambiguous or
-   when you need to understand *why*, not just *what*.
+2. `docs/adr/` — the full rationale, **split into topic files (ADR-X7) — do not read all
+   of them for one question.** Start at `docs/adr/00-overview.md` (69 lines, cheap) to find
+   which file actually covers what you need, then `grep -n "^### ADR-M4"` (or whichever
+   decision) that one file and read just that section with `offset`/`limit`. This repo only
+   carries `02-mobile-decisions.md`, not `01-backend-decisions.md` — if a task needs backend
+   internals, that's a signal it may belong in `pulsecrypto-backend` instead.
 3. This file — hard constraints extracted from the ADR, so they can't be missed or
    "improved" away during implementation. If anything here ever conflicts with the ADR,
    the ADR wins — flag the discrepancy rather than picking one silently.
 
-**`docs/PulseCrypto-ADR.md` is a mirror, not the source.** The source of truth is
-`/Users/tmpw/Projects/pulse_crypto/PulseCrypto-ADR.md`, one level above both repos. If an
-ADR-level decision changes (not a spec detail — an actual architectural decision), it gets
-updated there first, and the mirrored copy in this repo (and in
-`pulsecrypto-backend/docs/`) gets re-copied afterward so both repos stay on the same page
-as the root document. Don't edit the mirrored copy independently and let it drift from the
-root.
+**`docs/adr/` is a mirror, not the source.** The source of truth is
+`/Users/tmpw/Projects/pulse_crypto/adr/`, one level above both repos (index:
+`adr/00-overview.md`). If an ADR-level decision changes (not a spec detail — an actual
+architectural decision), it gets updated there first, in the specific topic file it belongs
+to, and the corresponding mirrored file in this repo (and in `pulsecrypto-backend/docs/adr/`,
+if that decision applies there too) gets re-copied afterward — one file, not the whole
+folder, unless several files actually changed. Don't edit a mirrored copy independently and
+let it drift from the root.
 
 **Never commit.** Leave changes in the working tree for the user to review and commit
 themselves. Do not run `git commit`, even if a task seems complete, unless explicitly
@@ -85,7 +127,7 @@ told to for that specific change.
 
 **Never commit secrets, ever — they're gitignored, not just "handled carefully."** `.env`,
 any API tokens (including a Figma personal access token, if one is ever used again for
-design work — see `docs/PulseCrypto-ADR.md` ADR-M10), signing material
+design work — see ADR-M10 in `docs/adr/02-mobile-decisions.md`), signing material
 (`*.jks`/`*.p8`/`*.p12`/`*.mobileprovision`) are covered by `.gitignore` (already in
 place). Real values go in `.env` (gitignored) with a placeholder in `.env.example`
 (committed), never inline in code. If `git status` or a diff ever shows a secret about to
