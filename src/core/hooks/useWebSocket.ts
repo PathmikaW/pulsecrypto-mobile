@@ -30,6 +30,9 @@ export function useWebSocket(): void {
       onStatusChange: (status) => {
         useMarketStore.getState().setConnectionStatus(status);
       },
+      onMessageRate: (rate) => {
+        useMarketStore.getState().setWsMessageRate(rate);
+      },
       onMessage: (raw) => {
         let parsedJson: unknown;
         try {
