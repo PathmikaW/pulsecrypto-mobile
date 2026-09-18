@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../../core/theme';
@@ -5,6 +6,7 @@ import { colors } from '../../../core/theme';
 const WIDTH = 400;
 const HEIGHT = 160;
 const SAMPLE_COUNT = 24;
+const MID_X = WIDTH / 2;
 
 // Matches Figma's "Shader" background behind the Market Depth panel - a smooth decorative
 // wave, green on the left (bids) fading into red on the right (asks), split by a thin
@@ -28,21 +30,25 @@ function buildFillPath(fromX: number, toX: number): string {
   return `${buildWavePoints(fromX, toX)} L ${toX} ${HEIGHT} L ${fromX} ${HEIGHT} Z`;
 }
 
-export function MarketDepthChart() {
-  const midX = WIDTH / 2;
+// The wave is 100% static (no props, no external inputs) - computed once at module load
+// rather than on every render. MarketDetailScreen re-renders on every ~100ms WS tick, and
+// this shape never changes, so recomputing 2x24 trig samples + path strings on every one
+// of those ticks would be pure waste.
+const LEFT_FILL_PATH = buildFillPath(0, MID_X);
+const RIGHT_FILL_PATH = buildFillPath(MID_X, WIDTH);
+const DIVIDER_PATH = `M ${MID_X} 0 L ${MID_X} ${HEIGHT}`;
 
+function MarketDepthChartComponent() {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <Svg width="100%" height="100%" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none">
-        <Path d={buildFillPath(0, midX)} fill={colors.signal.positiveMuted} fillOpacity={0.5} />
-        <Path d={buildFillPath(midX, WIDTH)} fill={colors.signal.negative} fillOpacity={0.35} />
-        <Path
-          d={`M ${midX} 0 L ${midX} ${HEIGHT}`}
-          stroke={colors.text.label}
-          strokeWidth={1}
-          strokeOpacity={0.4}
-        />
+        <Path d={LEFT_FILL_PATH} fill={colors.signal.positiveMuted} fillOpacity={0.5} />
+        <Path d={RIGHT_FILL_PATH} fill={colors.signal.negative} fillOpacity={0.35} />
+        <Path d={DIVIDER_PATH} stroke={colors.text.label} strokeWidth={1} strokeOpacity={0.4} />
       </Svg>
     </View>
   );
 }
+
+// Takes no props, so this memo never re-renders once mounted - the wave truly renders once.
+export const MarketDepthChart = memo(MarketDepthChartComponent);

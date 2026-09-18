@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { colors } from '../../../core/theme';
 
@@ -19,11 +20,19 @@ function buildAreaPath(): string {
   return `${buildLinePath()} L ${WIDTH} ${HEIGHT} L 0 ${HEIGHT} Z`;
 }
 
-export function MemorySparkline() {
+// Computed once at module load, not per-render — this shape is 100% static, but its parent
+// card re-renders every second (the WS message-rate counter), so without memoization these
+// path strings would be rebuilt for no reason on every one of those renders.
+const AREA_PATH = buildAreaPath();
+const LINE_PATH = buildLinePath();
+
+function MemorySparklineComponent() {
   return (
     <Svg width="100%" height={HEIGHT} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none">
-      <Path d={buildAreaPath()} fill={colors.signal.negativeMuted} fillOpacity={0.15} />
-      <Path d={buildLinePath()} stroke={colors.signal.negativeMuted} strokeWidth={2} fill="none" />
+      <Path d={AREA_PATH} fill={colors.signal.negativeMuted} fillOpacity={0.15} />
+      <Path d={LINE_PATH} stroke={colors.signal.negativeMuted} strokeWidth={2} fill="none" />
     </Svg>
   );
 }
+
+export const MemorySparkline = memo(MemorySparklineComponent);
