@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
+import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { colors, spacing, typography } from '../../../core/theme';
 import type { RootStackParamList } from '../../../navigation/types';
 import { PairRow } from './PairRow';
@@ -33,20 +34,24 @@ export function WatchlistScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>{t('title')}</Text>
       <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
-      <FlashList
-        data={rows}
-        keyExtractor={(row) => row.symbol}
-        renderItem={renderItem}
-        refreshing={isRefetching}
-        onRefresh={refetch}
-        ListEmptyComponent={<Text style={styles.empty}>{t('noResults')}</Text>}
-      />
+      <View style={styles.listContainer}>
+        <FlashList
+          data={rows}
+          keyExtractor={(row) => row.symbol}
+          renderItem={renderItem}
+          refreshing={isRefetching}
+          onRefresh={refetch}
+          ListEmptyComponent={<Text style={styles.empty}>{t('noResults')}</Text>}
+        />
+      </View>
+      <BottomNavBar />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
+  listContainer: { flex: 1 },
   title: { color: colors.text.primary, ...typography.heading, padding: spacing.lg },
   empty: { color: colors.text.label, textAlign: 'center', marginTop: spacing.xxl, ...typography.body },
 });

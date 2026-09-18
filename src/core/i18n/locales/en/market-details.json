@@ -4,5 +4,27 @@
   "sellPressure": "Sell Pressure",
   "spread": "Spread",
   "orderBook": "Order Book",
-  "lastUpdated": "Last updated {{time}}"
+  "lastUpdated": "Last updated {{time}}",
+  "priceHeader": "PRICE (USDT)",
+  "amountHeader": "AMOUNT ({{asset}})",
+  "totalHeader": "TOTAL",
+  "high24h": "24H High",
+  "low24h": "24H Low",
+  "volume24h": "24H Volume",
+  "marketDepth": "Market Depth",
+  "pressureBuyHeavy": "Buy Heavy",
+  "pressureSellHeavy": "Sell Heavy",
+  "pressureBalanced": "Balanced",
+  "loadingOrderBook": "Waiting for order book data…",
+  "accountDrawer": {
+    "tier": "Tier 3 Verified • ID: 882941",
+    "profileName": "Pro Trader",
+    "account": "ACCOUNT",
+    "apiKeys": "API Keys",
+    "security": "Security",
+    "trading": "TRADING",
+    "tradeHistory": "Trade History",
+    "support": "Support",
+    "signOut": "Sign Out"
+  }
 }
