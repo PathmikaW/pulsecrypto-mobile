@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { memo, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { ConnectionIndicator } from '../../../core/components/ConnectionIndicator';
+import { Icon } from '../../../core/components/Icon';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
 import { PriceText } from '../../../core/components/PriceText';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
@@ -107,10 +107,13 @@ export function MarketDetailScreen({ route }: Props) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
           <Pressable onPress={() => setDrawerOpen(true)} hitSlop={12} accessibilityLabel={t('common:menu')}>
-            <Ionicons name="menu" size={24} color={colors.text.primary} />
+            <Icon name="menu" size={22} color={colors.signal.positive} />
           </Pressable>
           <Text style={styles.headerTitle}>{meta?.displayName ?? pair}</Text>
-          <ConnectionIndicator />
+          <View style={styles.headerRight}>
+            <ConnectionIndicator />
+            <Icon name="livePulse" size={18} color={colors.signal.positive} />
+          </View>
         </View>
 
         {marketData == null ? (
@@ -251,6 +254,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   headerTitle: { color: colors.text.primary, ...typography.heading },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs },
   priceLabel: { color: colors.text.label, ...typography.labelCaps },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
