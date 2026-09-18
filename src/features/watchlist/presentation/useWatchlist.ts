@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
 import { usePairsMeta } from '../../../core/hooks/usePairsMeta';
+import { formatPairDisplayName } from '../../../core/utils/formatPairDisplayName';
 import { useFavourites } from '../../favourites';
 import type { TradingPairSymbol } from '../../../core/domain/models/TradingPair';
 
@@ -41,7 +42,7 @@ export function useWatchlist() {
       const meta = metaBySymbol.get(symbol);
       return {
         symbol,
-        displayName: meta?.displayName ?? symbol,
+        displayName: formatPairDisplayName(meta?.displayName, symbol),
         isTracked: meta != null,
         isFavourite: favouriteSet.has(symbol),
       };

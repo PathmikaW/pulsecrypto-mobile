@@ -65,7 +65,7 @@ describe('useWatchlist', () => {
     const solRow = result.current.rows.find((r) => r.symbol === 'SOLUSDT');
     expect(solRow?.isTracked).toBe(false);
     expect(solRow?.isFavourite).toBe(true);
-    expect(solRow?.displayName).toBe('SOLUSDT'); // no meta available, falls back to the raw symbol
+    expect(solRow?.displayName).toBe('SOL/USDT'); // no meta available, derived from the symbol
   });
 
   it('filters rows by search query, case-insensitively, matching symbol or display name', () => {
