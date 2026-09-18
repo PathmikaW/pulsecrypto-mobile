@@ -6,6 +6,7 @@ const update: MarketUpdate = {
   timestamp: 1720802025,
   lastUpdatedAt: 1720802025123,
   price: 109235.42,
+  change24h: -2.5,
   spread: 0.41,
   buyPressure: 63,
   sellPressure: 37,
@@ -20,6 +21,7 @@ describe('toMarketData', () => {
     expect(result).toEqual({
       pair: 'BTCUSDT',
       price: 109235.42,
+      change24h: -2.5,
       spread: 0.41,
       buyPressure: 63,
       sellPressure: 37,
