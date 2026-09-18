@@ -1,0 +1,8 @@
+{
+  "currentPrice": "Current Price",
+  "buyPressure": "Buy Pressure",
+  "sellPressure": "Sell Pressure",
+  "spread": "Spread",
+  "orderBook": "Order Book",
+  "lastUpdated": "Last updated {{time}}"
+}
