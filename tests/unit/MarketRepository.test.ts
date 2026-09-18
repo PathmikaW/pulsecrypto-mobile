@@ -17,7 +17,14 @@ function makeMarketData(pair: string, price: number): MarketData {
 
 describe('marketStore / marketRepository', () => {
   beforeEach(() => {
+    // updatePair() triggers persist's throttled MMKV write (a real setTimeout) - fake
+    // timers keep that from leaking a live timer past the end of each test.
+    jest.useFakeTimers();
     useMarketStore.setState({ pairs: {}, connectionStatus: 'connecting' });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('keys pairs dynamically — getTrackedPairs reflects whatever has been updated, not a fixed count', () => {

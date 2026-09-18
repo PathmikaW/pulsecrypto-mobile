@@ -32,6 +32,9 @@ function makeMarketData(pair: string): MarketData {
 
 describe('useWatchlist', () => {
   beforeEach(() => {
+    // useMarketStore.setState() triggers persist's throttled MMKV write (a real
+    // setTimeout) - fake timers keep that from leaking past the end of each test.
+    jest.useFakeTimers();
     useFavouritesStore.setState({ favourites: [] });
     useMarketStore.setState({ pairs: {} });
     mockedUsePairsMeta.mockReturnValue({
@@ -42,6 +45,10 @@ describe('useWatchlist', () => {
       refetch: jest.fn(),
       isRefetching: false,
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('returns a row for every tracked pair', () => {
