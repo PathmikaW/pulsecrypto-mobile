@@ -1,8 +1,16 @@
 # pulsecrypto-mobile — Instructions for Claude Code
 
+@AGENTS.md
+
 PulseCrypto's mobile app: a React Native (Expo Dev Client) app that consumes the backend's
 WebSocket broadcast and REST metadata endpoint, and visualizes it under sustained
 real-time updates.
+
+**Expo's official Claude Code plugin is enabled for this project** (`.claude/settings.json`
+— `expo@claude-plugins-official`). Use its Expo Skills/MCP tools when available to verify
+Expo/React Native API usage and SDK-version specifics against current docs, rather than
+relying on training data — the same "verify, don't assume" discipline this project already
+applies everywhere else (see `docs/adr/00-overview.md`'s Executive Summary).
 
 **This repo follows Spec-Driven Development.** Before implementing any unit of work, read
 its spec in `specs/`. If no spec exists for what you're about to build, stop and write the
