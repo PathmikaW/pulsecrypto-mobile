@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { TopAppBar } from '../../../core/components/TopAppBar';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
@@ -109,6 +109,22 @@ export function MarketDetailScreen({ route }: Props) {
       <View style={styles.container}>
         <TopAppBar title={t('common:nav.terminal')} />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Explains the wait and offers a manual nudge - the WS connection already
+          retries forever on its own, but /pairs/meta's retries are finite (TanStack
+          Query's default), so once those are exhausted this is the only way to prompt
+          another REST attempt without restarting the app. */}
+          <View style={styles.waitingBanner}>
+            <Text style={styles.waitingText}>{t('waitingForConnection')}</Text>
+            <Pressable
+              style={styles.retryButton}
+              onPress={() => pairsMetaQuery.refetch()}
+              disabled={pairsMetaQuery.isFetching}
+            >
+              <Text style={styles.retryText}>
+                {pairsMetaQuery.isFetching ? t('common:connection.connecting') : t('retry')}
+              </Text>
+            </Pressable>
+          </View>
           <TerminalSkeleton />
         </ScrollView>
         <BottomNavBar />
@@ -260,6 +276,22 @@ const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | u
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
   scrollContent: { paddingBottom: spacing.xl },
+  waitingBanner: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xxl,
+  },
+  waitingText: { color: colors.text.label, ...typography.bodySmall, textAlign: 'center' },
+  retryButton: {
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.background.divider,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  retryText: { color: colors.signal.positive, ...typography.labelCaps },
   // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.lg },
   priceLabel: { color: colors.text.primary, ...typography.labelCaps },

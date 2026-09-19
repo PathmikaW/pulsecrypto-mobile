@@ -23,6 +23,8 @@
   "pressureSellHeavy": "Sell Heavy",
   "pressureBalanced": "Balanced",
   "loadingOrderBook": "Waiting for order book data…",
+  "waitingForConnection": "Waiting for a connection to the server…",
+  "retry": "Retry",
   "accountDrawer": {
     "tierLabel": "Tier 3 Verified • ",
     "tierId": "ID: 882941",
