@@ -1,5 +1,5 @@
 import { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig } from 'axios';
-import { createHttpClient } from '../../src/core/api/httpClient';
+import { createApiClient } from '../../src/core/api/apiClient';
 import { AppError } from '../../src/core/api/errors';
 
 function respondWith(data: unknown): AxiosAdapter {
@@ -12,12 +12,13 @@ function respondWith(data: unknown): AxiosAdapter {
   });
 }
 
-describe('createHttpClient', () => {
+describe('createApiClient', () => {
   it('GETs baseURL + path and returns the response body', async () => {
     const adapter = jest.fn(respondWith({ ok: true }));
-    const client = createHttpClient({ baseURL: 'http://api.test', adapter });
+    const client = createApiClient({ baseURL: 'http://api.test', adapter });
 
-    await expect(client.get('/pairs/meta')).resolves.toEqual({ ok: true });
+    const response = await client.get('/pairs/meta');
+    expect(response.data).toEqual({ ok: true });
 
     const config = adapter.mock.calls[0]![0];
     expect(config.baseURL).toBe('http://api.test');
@@ -36,7 +37,7 @@ describe('createHttpClient', () => {
         data: {},
       });
     };
-    const client = createHttpClient({ baseURL: 'http://api.test', adapter });
+    const client = createApiClient({ baseURL: 'http://api.test', adapter });
 
     const error = await client.get('/pairs/meta').catch((e: unknown) => e);
 
@@ -48,7 +49,7 @@ describe('createHttpClient', () => {
     const adapter: AxiosAdapter = async (config) => {
       throw new AxiosError('Network Error', 'ERR_NETWORK', config);
     };
-    const client = createHttpClient({ baseURL: 'http://api.test', adapter });
+    const client = createApiClient({ baseURL: 'http://api.test', adapter });
 
     await expect(client.get('/pairs/meta')).rejects.toMatchObject({ kind: 'network', retryable: true });
   });
@@ -57,7 +58,7 @@ describe('createHttpClient', () => {
     const adapter: AxiosAdapter = async (config) => {
       throw new AxiosError('timeout of 10000ms exceeded', 'ECONNABORTED', config);
     };
-    const client = createHttpClient({ baseURL: 'http://api.test', adapter });
+    const client = createApiClient({ baseURL: 'http://api.test', adapter });
 
     await expect(client.get('/pairs/meta')).rejects.toMatchObject({ kind: 'timeout', retryable: true });
   });
