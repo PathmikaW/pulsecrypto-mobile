@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
+import { Icon } from '../../../core/components/Icon';
 import { Toggle } from '../../../core/components/Toggle';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
@@ -27,10 +27,7 @@ export function DataThrottlingCard() {
           <Text style={styles.eyebrow}>{t('telemetry.networkControl')}</Text>
           <Text style={styles.heading}>{t('telemetry.dataThrottling')}</Text>
         </View>
-        {/* Figma has a small gauge/speedometer icon here - export still blocked by a
-        persistent Figma API rate limit; using a close Ionicons stand-in so the layout is
-        correct now, swap for the real exported icon once the API is available again. */}
-        <Ionicons name="speedometer-outline" size={20} color={colors.text.numeric} />
+        <Icon name="dataThrottlingGauge" size={20} color={colors.text.numeric} />
       </View>
 
       <View style={styles.sliderSection}>

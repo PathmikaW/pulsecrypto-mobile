@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Icon } from '../../../core/components/Icon';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 import { CircularGauge } from './CircularGauge';
@@ -41,9 +41,7 @@ export function PerformanceDashboardCard() {
       </View>
 
       <View style={styles.counterSection}>
-        {/* Real Figma export still blocked by a persistent API rate limit - close Ionicons
-        stand-in for now, same swap-later approach as the throttling card's icon. */}
-        <Ionicons name="layers-outline" size={20} color={colors.signal.negativeMuted} />
+        <Icon name="wsIngestion" size={20} color={colors.signal.negativeMuted} />
         <Text style={styles.counterValue}>{messageRate}</Text>
         <Text style={styles.counterUnit}>{t('telemetry.msgsPerSec')}</Text>
         <Text style={styles.metricLabel}>{t('telemetry.wsIngestionRate')}</Text>
@@ -99,7 +97,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   counterValue: { color: colors.text.primary, ...typography.priceDisplay },
-  counterUnit: { color: colors.text.numeric, ...typography.labelCaps },
+  // textTransform: 'none' overrides labelCaps' default uppercase - Figma shows this one
+  // lowercase ("msgs/sec"), unlike every other labelCaps usage on this screen.
+  counterUnit: { color: colors.text.numeric, ...typography.labelCaps, textTransform: 'none' },
   metricLabel: { color: colors.text.primary, ...typography.body },
   memorySection: {
     backgroundColor: colors.background.navBar,
