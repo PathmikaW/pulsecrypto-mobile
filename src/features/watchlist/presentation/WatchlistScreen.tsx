@@ -1,10 +1,9 @@
 import { FlashList } from '@shopify/flash-list';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
-import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { TopAppBar } from '../../../core/components/TopAppBar';
 import { colors, spacing, typography } from '../../../core/theme';
 import type { RootStackParamList } from '../../../navigation/types';
@@ -12,11 +11,12 @@ import { PairRow } from './PairRow';
 import { SearchBar } from './SearchBar';
 import { useWatchlist, type WatchlistRow } from './useWatchlist';
 
-type Navigation = NativeStackNavigationProp<RootStackParamList>;
+type Navigation = BottomTabNavigationProp<RootStackParamList>;
 
 export function WatchlistScreen() {
   const { t } = useTranslation('watchlist');
   const navigation = useNavigation<Navigation>();
+  const isFocused = useIsFocused();
   const { rows, searchQuery, setSearchQuery, toggleFavourite, refetch, isRefetching } = useWatchlist();
 
   const handlePairPress = useCallback(
@@ -26,9 +26,14 @@ export function WatchlistScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: WatchlistRow }) => (
-      <PairRow row={item} onPress={handlePairPress} onToggleFavourite={toggleFavourite} />
+      <PairRow
+        row={item}
+        onPress={handlePairPress}
+        onToggleFavourite={toggleFavourite}
+        isFocused={isFocused}
+      />
     ),
-    [handlePairPress, toggleFavourite]
+    [handlePairPress, toggleFavourite, isFocused]
   );
 
   return (
@@ -45,7 +50,6 @@ export function WatchlistScreen() {
           ListEmptyComponent={<Text style={styles.empty}>{t('noResults')}</Text>}
         />
       </View>
-      <BottomNavBar />
     </View>
   );
 }

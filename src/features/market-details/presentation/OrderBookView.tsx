@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -91,10 +91,21 @@ interface OrderBookViewProps {
 // actual structure exactly (two distinct "Bids Section"/"Asks Section" frames, not one
 // shared header over a single combined list).
 export function OrderBookView({ bids, asks, baseAsset }: OrderBookViewProps) {
-  const visibleBids = bids.slice(0, DISPLAY_DEPTH);
-  const visibleAsks = asks.slice(0, DISPLAY_DEPTH);
-  const maxBidQuantity = Math.max(0, ...visibleBids.map((l) => l.quantity));
-  const maxAskQuantity = Math.max(0, ...visibleAsks.map((l) => l.quantity));
+  // Memoized, keyed on the bids/asks array refs themselves - skips the slice/map/Math.max
+  // work on a re-render that isn't actually caused by new order book data (e.g. a language
+  // or baseAsset change bubbling down through the parent). Doesn't reduce work on a genuine
+  // WS-driven update (bids/asks are new refs every tick by design), only on the incidental
+  // re-renders layered on top of that steady 100ms cadence.
+  const { visibleBids, visibleAsks, maxBidQuantity, maxAskQuantity } = useMemo(() => {
+    const bidsSlice = bids.slice(0, DISPLAY_DEPTH);
+    const asksSlice = asks.slice(0, DISPLAY_DEPTH);
+    return {
+      visibleBids: bidsSlice,
+      visibleAsks: asksSlice,
+      maxBidQuantity: Math.max(0, ...bidsSlice.map((l) => l.quantity)),
+      maxAskQuantity: Math.max(0, ...asksSlice.map((l) => l.quantity)),
+    };
+  }, [bids, asks]);
 
   return (
     <View>

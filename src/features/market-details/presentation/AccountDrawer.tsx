@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Icon } from '../../../core/components/Icon';
 import type { SvgIconName } from '../../../core/icons/svgIcons';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 import { useUiStore } from '../../../store/uiStore';
+import { ComingSoonDialog } from './ComingSoonDialog';
 
 const PANEL_WIDTH_RATIO = 0.82; // 320 of the Terminal frame's 390 (verified in Figma)
 const ANIMATION_DURATION_MS = 250;
@@ -34,6 +35,15 @@ export function AccountDrawer() {
   const backdropOpacity = useSharedValue(0);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Render-phase state update (React's documented "adjust state during render" pattern,
+  // not a lint violation like a setState-in-effect would be) - mounts the Modal in the
+  // SAME commit as the isOpen flip, instead of an extra render -> effect -> render
+  // round-trip. That two-hop mount gate, not the reanimated animation itself (already
+  // UI-thread), was the actual cause of the open feeling delayed by "a few ms".
+  if (isOpen && !isMounted) {
+    setIsMounted(true);
+  }
+
   useEffect(() => {
     // Deliberately keyed on `isOpen` alone: this synchronizes the animation with an
     // external system (the UI thread, via reanimated shared values), which is exactly
@@ -41,8 +51,6 @@ export function AccountDrawer() {
     // the close animation's own completion callback fires) is the standard pattern for a
     // slide-out-before-unmount drawer, not an accidental cascading render.
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above.
-      setIsMounted(true);
       translateX.value = withTiming(0, { duration: ANIMATION_DURATION_MS });
       backdropOpacity.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
     } else if (isMounted) {
@@ -61,9 +69,8 @@ export function AccountDrawer() {
   const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }));
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
 
-  const showComingSoon = (label: string) => {
-    Alert.alert(t('accountDrawer.comingSoonTitle'), t('accountDrawer.comingSoonBody', { feature: label }));
-  };
+  const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
+  const showComingSoon = (label: string) => setComingSoonFeature(label);
 
   if (!isMounted) return null;
 
@@ -122,6 +129,14 @@ export function AccountDrawer() {
             </Pressable>
           </View>
         </Animated.View>
+
+        <ComingSoonDialog
+          visible={comingSoonFeature !== null}
+          title={t('accountDrawer.comingSoonTitle')}
+          body={t('accountDrawer.comingSoonBody', { feature: comingSoonFeature ?? '' })}
+          confirmLabel={t('accountDrawer.comingSoonConfirm')}
+          onDismiss={() => setComingSoonFeature(null)}
+        />
       </View>
     </Modal>
   );

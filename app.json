@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "pulsecrypto-mobile",
+    "name": "Pulse Crypto",
     "slug": "pulsecrypto-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,6 +23,23 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-localization", "expo-font", "expo-splash-screen", "expo-image"]
+    "plugins": [
+      "expo-localization",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#0B1420",
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-image"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3240ab86-1428-4eff-a3c7-0e4f7ccc65a0"
+      }
+    }
   }
 }

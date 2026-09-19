@@ -89,7 +89,7 @@ installs during feature implementation (`pnpm add`, or `npx expo install` for
 native-code packages per the install rule below — Expo's CLI stays npx-invoked regardless
 of package manager, since it's Expo's own version-resolution logic, not a plain package
 fetch) are normal work and fine to run directly —
-the boundary is specifically the *initial scaffold and prebuild*, not every subsequent
+the boundary is specifically the _initial scaffold and prebuild_, not every subsequent
 install. See ADR-X5 in the ADR for the full reasoning.
 
 ## Evaluation context — why "correct-enough" isn't the bar here
@@ -172,6 +172,7 @@ whatever beta is newest without re-checking its stability first (ADR §5 callout
 and `ios/` are generated, not committed.
 
 **State management split (ADR-M2) — two tools, not one used for everything:**
+
 - **Zustand**: WebSocket-driven market data (`marketStore`, keyed by symbol, not a fixed
   count), favourites (via `persist` middleware), connection status, search/UI state.
 - **TanStack Query**: REST data (`/pairs/meta`) — caching, refetch, loading/error states.
@@ -195,6 +196,7 @@ last-known market state, and the manual language override (ADR-M9). Synchronous 
 this is what avoids a flash of incorrect state on launch.
 
 **WebSocket client (ADR-M6) — no heartbeat, ever:**
+
 - Custom `useWebSocket` hook. Exponential backoff with jitter (1s → 2s → 4s → 8s, capped
   30s) for reconnection.
 - Liveness is inferred from **broadcast silence**, not a ping/pong exchange:
@@ -229,6 +231,7 @@ just before recording the screen capture. iOS Simulator support is optional and 
 substitute for it.
 
 **Project structure (ADR-M8) — feature-first with a small, disciplined `core/` layer:**
+
 ```
 src/
 ├── contracts/        # Mirrored from backend's contracts/ — see ADR-X1. Don't hand-edit
@@ -263,6 +266,7 @@ src/
 ├── navigation/
 └── app.tsx
 ```
+
 - Before adding anything to `core/`, apply the two-or-more-features test: does a second
   feature genuinely need this? If not, it belongs inside the one feature that needs it.
 - Every feature exposes its public surface through `index.ts` (barrel export). Reaching
@@ -274,6 +278,7 @@ src/
   `core/components/UntrackedFavouriteBadge`, localized — never hidden, never a crash.
 
 **Internationalization (ADR-M9) — every user-facing string, no exceptions:**
+
 - `i18next` + `react-i18next` + `expo-localization`. Namespaced JSON per feature
   (`common.json`, `watchlist.json`, `market-details.json`, `favourites.json`).
 - Do not hardcode any user-facing string directly in JSX — route it through
@@ -293,7 +298,7 @@ backend contract change to request, not something to invent locally.
 ## Tech stack (verify exact patch versions at scaffold time — see ADR §5)
 
 Expo SDK 57 (RN 0.86, React 19.2) · pnpm (package manager, ADR-X5) · TypeScript 5.9.x ·
-React Navigation 7.x (Native Stack) · Zustand 5.x · TanStack Query 5.102.x · FlashList v2.x ·
+React Navigation 7.x (Bottom Tabs — ADR-M11) · Zustand 5.x · TanStack Query 5.102.x · FlashList v2.x ·
 react-native-reanimated (install via `npx expo install`, do not pin independently) ·
 `react-native-mmkv` 3.x (via `npx expo install`) · i18next + react-i18next (plain
 `pnpm add`) + expo-localization (via `npx expo install`) · Jest 30.x + React Native

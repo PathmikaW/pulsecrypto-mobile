@@ -30,6 +30,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginHorizontal: spacing.lg,
+    // marginTop: gap between the TopAppBar and the search field - was flush against it.
+    marginTop: spacing.md,
     marginBottom: spacing.sm,
     color: colors.text.primary,
     ...typography.body,
