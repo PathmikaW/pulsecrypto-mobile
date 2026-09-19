@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useShallow } from 'zustand/react/shallow';
-import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { TopAppBar } from '../../../core/components/TopAppBar';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
 import { colors, spacing, typography } from '../../../core/theme';
@@ -56,8 +55,6 @@ export function TelemetryScreen() {
           />
         </View>
       </ScrollView>
-
-      <BottomNavBar />
     </View>
   );
 }

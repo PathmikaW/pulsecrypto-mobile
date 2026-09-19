@@ -1,5 +1,5 @@
 import { useNavigation, useNavigationState } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import type { SvgIconName } from '../icons/svgIcons';
 import { colors, radius, spacing, typography } from '../theme';
 import { Icon } from './Icon';
 
-type Navigation = NativeStackNavigationProp<RootStackParamList>;
+type Navigation = BottomTabNavigationProp<RootStackParamList>;
 type TabRoute = keyof RootStackParamList;
 
 const TABS: readonly { route: TabRoute; labelKey: string; icon: SvgIconName }[] = [
@@ -76,12 +76,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
   },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
+  // alignItems: 'stretch' (not 'center') + paddingHorizontal here, not on tabContent, is
+  // what gives every tab's pill an equal width regardless of its own label's text length -
+  // tabContent stretches to fill whatever's left of this tab's fixed 1/4 share (inset by
+  // this padding on both sides), so "Markets" (a shorter word) no longer gets a visibly
+  // narrower highlighted area than "Telemetry".
+  tab: { flex: 1, alignItems: 'stretch', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
   tabContent: {
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xl,
     borderRadius: radius.pill,
     overflow: 'hidden',
   },

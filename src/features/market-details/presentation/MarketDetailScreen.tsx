@@ -1,10 +1,9 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { BlurView } from 'expo-blur';
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { TopAppBar } from '../../../core/components/TopAppBar';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
 import { PriceText } from '../../../core/components/PriceText';
@@ -32,7 +31,7 @@ const LIQUIDITY_GAP_LABEL_KEY = {
   high: 'liquidityGapHigh',
 } as const;
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Terminal'>;
+type Props = BottomTabScreenProps<RootStackParamList, 'Terminal'>;
 
 // Built to Figma's "Trading Terminal" frame at full fidelity, parameterized per pair
 // (specs/mobile-screens.md) - Figma's mock shows a fixed "BTC/USDT," but this screen
@@ -128,7 +127,6 @@ export function MarketDetailScreen({ route }: Props) {
           </View>
           <TerminalSkeleton />
         </ScrollView>
-        <BottomNavBar />
       </View>
     );
   }
@@ -249,8 +247,6 @@ export function MarketDetailScreen({ route }: Props) {
           </>
         )}
       </ScrollView>
-
-      <BottomNavBar />
     </View>
   );
 }
