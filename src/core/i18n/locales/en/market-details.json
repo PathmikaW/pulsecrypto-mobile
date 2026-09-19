@@ -10,6 +10,7 @@
   "high24h": "24H HIGH",
   "low24h": "24H LOW",
   "volume24h": "24H VOLUME",
+  "marketCap": "MARKET CAP",
   "marketDepth": "MARKET DEPTH",
   "bidsTotal": "Bids: {{amount}} {{asset}}",
   "asksTotal": "Asks: {{amount}} {{asset}}",

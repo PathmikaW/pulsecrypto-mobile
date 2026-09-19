@@ -85,15 +85,19 @@ export function AccountDrawer() {
             panelStyle,
           ]}
         >
+          {/* Avatar sits left of the name/tier text block, not above it - an earlier reading
+          stacked them vertically; Figma has the icon and text side by side. */}
           <View style={styles.profile}>
             <View style={styles.avatar}>
               <Icon name="avatarPerson" size={28} color={colors.signal.positiveMuted} />
             </View>
-            <Text style={styles.name}>{t('accountDrawer.profileName')}</Text>
-            <Text style={styles.tier}>
-              {t('accountDrawer.tierLabel')}
-              <Text style={styles.tierId}>{t('accountDrawer.tierId')}</Text>
-            </Text>
+            <View style={styles.profileText}>
+              <Text style={styles.name}>{t('accountDrawer.profileName')}</Text>
+              <Text style={styles.tier}>
+                {t('accountDrawer.tierLabel')}
+                <Text style={styles.tierId}>{t('accountDrawer.tierId')}</Text>
+              </Text>
+            </View>
           </View>
           <View style={styles.divider} />
 
@@ -166,8 +170,9 @@ const styles = StyleSheet.create({
   // lines can span the drawer's full width edge-to-edge, matching Figma exactly.
   content: { paddingHorizontal: spacing.lg },
   profile: {
-    alignItems: 'flex-start',
-    gap: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
   },
@@ -179,16 +184,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  profileText: { gap: spacing.xs },
   name: { color: colors.text.primary, ...typography.heading },
   tier: { color: colors.text.numeric, ...typography.bodySmall },
   tierId: { color: colors.signal.positive },
   divider: { height: 1, backgroundColor: colors.background.divider, marginBottom: spacing.md },
-  groupLabel: { color: colors.text.label, ...typography.labelCaps, marginTop: spacing.md },
+  // More vertical breathing room around each group - was flush against its links.
+  groupLabel: {
+    color: colors.text.label,
+    ...typography.labelCaps,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
+  },
   link: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
   },

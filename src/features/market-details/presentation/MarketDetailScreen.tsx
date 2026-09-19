@@ -233,9 +233,12 @@ const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | u
     <View style={styles.statRow}>
       <StatCell label={t('high24h')} value={meta ? formatPrice(meta.high24h, i18n.language) : '—'} />
       <StatCell label={t('low24h')} value={meta ? formatPrice(meta.low24h, i18n.language) : '—'} />
+      {/* Figma's top stat row is High/Low/Market Cap, not Volume - matches exactly.
+      marketCap is a static placeholder (see contracts/schemas.ts), same treatment as the
+      Telemetry screen's other display-only values (ADR-M10). */}
       <StatCell
-        label={t('volume24h')}
-        value={meta ? formatCompactNumber(meta.volume24h, i18n.language) : '—'}
+        label={t('marketCap')}
+        value={meta ? formatCompactNumber(meta.marketCap, i18n.language) : '—'}
       />
     </View>
   );
@@ -254,15 +257,19 @@ const styles = StyleSheet.create({
   loadingText: { color: colors.text.label, ...typography.bodySmall },
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs },
   priceLabel: { color: colors.text.label, ...typography.labelCaps },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  // Baseline-aligned, not center-aligned: the percent badge sits on the same text line as
+  // the price, not floated in the vertical middle of the large price digits (Figma shows
+  // both inline at the same baseline).
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   changeInline: { ...typography.tableValueSmall, fontSize: 14 },
   statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.lg },
   statCell: { flex: 1 },
   statLabel: { color: colors.text.label, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
+  // Edge-to-edge, no horizontal margin - matches Figma exactly (was: inset like the other
+  // sections, but the Market Depth card bleeds to the screen edges in the reference).
   depthPanel: {
     marginTop: spacing.lg,
-    marginHorizontal: spacing.lg,
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
     minHeight: 220,
