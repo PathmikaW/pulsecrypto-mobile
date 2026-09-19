@@ -47,6 +47,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
+    // Hairline under the header row, separating it from the screen's content below -
+    // Figma shows this on both Terminal and Telemetry.
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   titleGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
   title: { color: colors.text.primary, ...typography.heading },

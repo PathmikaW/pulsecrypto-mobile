@@ -65,10 +65,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     borderRadius: radius.pill,
   },
-  tabContentActive: { backgroundColor: colors.signal.positiveMuted },
+  // A translucent tint of colors.signal.positive (same box/glyph relationship as the
+  // Telemetry micro-cards), not the near-black positiveMuted solid - that read as barely
+  // visible against the nav bar's own dark background. Wider horizontal padding (lg, not
+  // md) so the pill reads as a fuller shape around the icon+label, matching Figma.
+  tabContentActive: { backgroundColor: `${colors.signal.positive}26` },
   // textTransform: 'none' overrides labelCaps' default uppercase - Figma's nav labels
   // ("Terminal", "Markets"...) are title case, not all-caps, unlike most other labelCaps
   // usages in this app.

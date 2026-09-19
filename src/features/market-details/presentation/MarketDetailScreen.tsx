@@ -110,7 +110,10 @@ export function MarketDetailScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <TopAppBar title={formatPairDisplayName(meta?.displayName, pair)} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* showsVerticalScrollIndicator=false: Android reserves a thin gutter for the
+      scrollbar track even when it's not actively visible, which showed up as an
+      asymmetric right-edge gap on the edge-to-edge Market Depth panel. */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {marketData == null ? (
           <View style={styles.loadingSection}>
             <ActivityIndicator color={colors.signal.positive} />
@@ -146,9 +149,9 @@ export function MarketDetailScreen({ route }: Props) {
               />
             </View>
 
-            <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
-
             <View style={styles.sectionDivider} />
+
+            <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
 
             <View style={styles.depthPanel}>
               <MarketDepthChart />
@@ -279,15 +282,19 @@ const styles = StyleSheet.create({
   // grow against) was collapsing the Liquidity Gap/Pressure StatCells to zero width,
   // making that box invisible even though it was rendering.
   statCell: {},
-  statLabel: { color: colors.text.label, ...typography.labelCaps },
+  // text.primary (near-white), not text.label (dim gray) - Figma shows these stat labels
+  // (24H HIGH/LOW/MARKET CAP, Spread/Buy Pressure/Sell Pressure) bright and bold, unlike
+  // the dimmer standalone section eyebrows (LAST PRICE, MARKET DEPTH).
+  statLabel: { color: colors.text.primary, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
-  // Thin full-bleed hairline before the Market Depth panel, matching the one Figma also
-  // shows under the order book's PRICE/AMOUNT/TOTAL header rows.
+  // Thin full-bleed hairline above the order book's PRICE/AMOUNT/TOTAL header, matching
+  // Figma - was missing between the Spread/Buy/Sell row and the table.
   sectionDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: spacing.lg },
-  // Edge-to-edge, no horizontal margin - matches Figma exactly (was: inset like the other
-  // sections, but the Market Depth card bleeds to the screen edges in the reference).
+  // Edge-to-edge (no horizontal margin) AND no marginTop - Figma shows the Market Depth
+  // card flush against the order book directly above it, not offset by a gap like the
+  // other sections (was: marginTop: spacing.lg, inherited from the section-spacing
+  // pattern used everywhere else, which doesn't apply here).
   depthPanel: {
-    marginTop: spacing.lg,
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
     minHeight: 220,

@@ -119,7 +119,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  headerCell: { flex: 1, color: colors.text.label, ...typography.labelCaps, textAlign: 'right' },
+  // text.primary (near-white), not text.label - Figma shows this header bright and bold.
+  headerCell: { flex: 1, color: colors.text.primary, ...typography.labelCaps, textAlign: 'right' },
   priceHeaderCell: { textAlign: 'left' },
   row: {
     flexDirection: 'row',
