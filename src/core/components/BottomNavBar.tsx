@@ -80,8 +80,11 @@ const styles = StyleSheet.create({
   // what gives every tab's pill an equal width regardless of its own label's text length -
   // tabContent stretches to fill whatever's left of this tab's fixed 1/4 share (inset by
   // this padding on both sides), so "Markets" (a shorter word) no longer gets a visibly
-  // narrower highlighted area than "Telemetry".
-  tab: { flex: 1, alignItems: 'stretch', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm },
+  // narrower highlighted area than "Telemetry". No paddingVertical here (only on
+  // tabContent below) - an outer vertical pad here would sit outside tabContent's painted
+  // background, so the active pill would look shorter than the full tab slot other icons
+  // occupy.
+  tab: { flex: 1, alignItems: 'stretch', paddingHorizontal: spacing.sm },
   tabContent: {
     alignItems: 'center',
     gap: spacing.xs,
