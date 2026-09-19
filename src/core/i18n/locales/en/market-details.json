@@ -38,6 +38,7 @@
     "signOut": "Sign Out",
     "close": "Close menu",
     "comingSoonTitle": "Coming Soon",
-    "comingSoonBody": "{{feature}} isn't available yet."
+    "comingSoonBody": "{{feature}} isn't available yet.",
+    "comingSoonConfirm": "OK"
   }
 }

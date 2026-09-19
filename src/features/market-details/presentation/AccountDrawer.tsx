@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Icon } from '../../../core/components/Icon';
 import type { SvgIconName } from '../../../core/icons/svgIcons';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 import { useUiStore } from '../../../store/uiStore';
+import { ComingSoonDialog } from './ComingSoonDialog';
 
 const PANEL_WIDTH_RATIO = 0.82; // 320 of the Terminal frame's 390 (verified in Figma)
 const ANIMATION_DURATION_MS = 250;
@@ -68,9 +69,8 @@ export function AccountDrawer() {
   const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }));
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
 
-  const showComingSoon = (label: string) => {
-    Alert.alert(t('accountDrawer.comingSoonTitle'), t('accountDrawer.comingSoonBody', { feature: label }));
-  };
+  const [comingSoonFeature, setComingSoonFeature] = useState<string | null>(null);
+  const showComingSoon = (label: string) => setComingSoonFeature(label);
 
   if (!isMounted) return null;
 
@@ -129,6 +129,14 @@ export function AccountDrawer() {
             </Pressable>
           </View>
         </Animated.View>
+
+        <ComingSoonDialog
+          visible={comingSoonFeature !== null}
+          title={t('accountDrawer.comingSoonTitle')}
+          body={t('accountDrawer.comingSoonBody', { feature: comingSoonFeature ?? '' })}
+          confirmLabel={t('accountDrawer.comingSoonConfirm')}
+          onDismiss={() => setComingSoonFeature(null)}
+        />
       </View>
     </Modal>
   );
