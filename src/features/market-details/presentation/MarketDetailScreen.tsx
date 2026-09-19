@@ -144,33 +144,39 @@ export function MarketDetailScreen({ route }: Props) {
           <TerminalSkeleton />
         ) : (
           <>
-            <View style={styles.priceSection}>
-              <Text style={styles.priceLabel}>{t('lastPrice')}</Text>
-              <View style={styles.priceRow}>
-                <PriceText value={marketData.price} changePercent={marketData.change24h} />
-                <Text
-                  style={[
-                    styles.changeInline,
-                    { color: marketData.change24h < 0 ? colors.signal.negative : colors.signal.positive },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {`${marketData.change24h < 0 ? '▼' : '▲'} ${formatPercent(Math.abs(marketData.change24h), i18n.language)}`}
-                </Text>
+            {/* One cohesive panel (LAST PRICE through Spread/Buy/Sell Pressure) on its own
+            background - #141C28, distinct from the screen's base background - not a flat
+            continuation of it. paddingBottom is the breathing room before the order book
+            table, which was previously flush against the Spread/Buy/Sell row. */}
+            <View style={styles.priceInfoPanel}>
+              <View style={styles.priceSection}>
+                <Text style={styles.priceLabel}>{t('lastPrice')}</Text>
+                <View style={styles.priceRow}>
+                  <PriceText value={marketData.price} changePercent={marketData.change24h} />
+                  <Text
+                    style={[
+                      styles.changeInline,
+                      { color: marketData.change24h < 0 ? colors.signal.negative : colors.signal.positive },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {`${marketData.change24h < 0 ? '▼' : '▲'} ${formatPercent(Math.abs(marketData.change24h), i18n.language)}`}
+                  </Text>
+                </View>
+                <PriceStatsRow meta={meta} />
               </View>
-              <PriceStatsRow meta={meta} />
-            </View>
 
-            <View style={styles.statRow}>
-              <StatCell label={t('spread')} value={formatPrice(marketData.spread, i18n.language)} />
-              <StatCell
-                label={t('buyPressure')}
-                value={formatPercent(marketData.buyPressure, i18n.language)}
-              />
-              <StatCell
-                label={t('sellPressure')}
-                value={formatPercent(marketData.sellPressure, i18n.language)}
-              />
+              <View style={styles.statRow}>
+                <StatCell label={t('spread')} value={formatPrice(marketData.spread, i18n.language)} />
+                <StatCell
+                  label={t('buyPressure')}
+                  value={formatPercent(marketData.buyPressure, i18n.language)}
+                />
+                <StatCell
+                  label={t('sellPressure')}
+                  value={formatPercent(marketData.sellPressure, i18n.language)}
+                />
+              </View>
             </View>
 
             <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
@@ -237,7 +243,9 @@ export function MarketDetailScreen({ route }: Props) {
               </View>
             </View>
 
-            <LastUpdatedLabel lastUpdatedAt={marketData.lastUpdatedAt} />
+            <View style={styles.lastUpdatedWrap}>
+              <LastUpdatedLabel lastUpdatedAt={marketData.lastUpdatedAt} />
+            </View>
           </>
         )}
       </ScrollView>
@@ -282,6 +290,7 @@ const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | u
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
+  lastUpdatedWrap: { marginTop: spacing.md },
   scrollContent: { paddingBottom: spacing.xl },
   waitingBanner: {
     alignItems: 'center',
@@ -299,9 +308,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   retryText: { color: colors.signal.positive, ...typography.labelCaps },
+  // Verified color - was a flat continuation of the screen's own background.
+  priceInfoPanel: { backgroundColor: colors.background.navBar, paddingBottom: spacing.lg },
   // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
-  priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.lg },
-  priceLabel: { color: colors.text.primary, ...typography.labelCaps },
+  priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.xl },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  priceLabel: { color: colors.text.numeric, ...typography.labelCaps },
   // Baseline-aligned, not center-aligned: the percent badge sits on the same text line as
   // the price, not floated in the vertical middle of the large price digits (Figma shows
   // both inline at the same baseline).
@@ -313,7 +325,10 @@ const styles = StyleSheet.create({
   // rather than let it overflow; numberOfLines={1} on the Text itself is the other half.
   changeInline: { ...typography.tableValue, flexShrink: 0 },
   statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.xl },
-  priceStatsRow: { flexDirection: 'row', marginTop: spacing.lg, gap: spacing.xl },
+  // No marginTop of its own now - priceSection's gap:xs already provides spacing between
+  // its children; this row's separate 16px marginTop stacked on top of that, making the
+  // gap to LAST PRICE larger than intended.
+  priceStatsRow: { flexDirection: 'row', gap: spacing.xl },
   // No flex:1: sized to content, matching Figma's tightly-packed columns instead of
   // evenly-stretched thirds. This also fixes a real bug - flex:1 inside depthLegendBox
   // (an absolutely-positioned, auto-width container with no definite main-axis size to
@@ -323,7 +338,9 @@ const styles = StyleSheet.create({
   // text.primary (near-white), not text.label (dim gray) - Figma shows these stat labels
   // (24H HIGH/LOW/MARKET CAP, Spread/Buy Pressure/Sell Pressure) bright and bold, unlike
   // the dimmer standalone section eyebrows (LAST PRICE, MARKET DEPTH).
-  statLabel: { color: colors.text.primary, ...typography.labelCaps },
+  // text.numeric (#C6C6CB) - verified value, covers 24H HIGH/LOW/MARKET CAP, Spread/Buy
+  // Pressure/Sell Pressure, and LIQUIDITY GAP/PRESSURE (all share this StatCell).
+  statLabel: { color: colors.text.numeric, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
   // Edge-to-edge (no horizontal margin), no marginTop, and no borderRadius - Figma shows
   // the Market Depth card flush against the order book directly above it and bleeding to
@@ -340,7 +357,8 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.08)',
   },
   depthTopLeft: { position: 'absolute', top: spacing.lg, left: spacing.lg, gap: spacing.sm },
-  depthTitle: { color: colors.text.primary, ...typography.labelCaps },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  depthTitle: { color: colors.text.numeric, ...typography.labelCaps },
   depthBullets: { flexDirection: 'row', gap: spacing.md },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
