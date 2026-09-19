@@ -1,3 +1,4 @@
+import { toAppError } from '../../../core/api/errors';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { useIsFocused } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
@@ -34,34 +35,22 @@ const LIQUIDITY_GAP_LABEL_KEY = {
 
 type Props = BottomTabScreenProps<RootStackParamList, 'Terminal'>;
 
-// Built to Figma's "Trading Terminal" frame at full fidelity, parameterized per pair
-// (specs/mobile-screens.md) - Figma's mock shows a fixed "BTC/USDT," but this screen
-// renders whichever pair was tapped from Markets, or defaults to the first tracked pair
-// when reached directly via the bottom nav's "Terminal" tab.
+// Renders the pair tapped from Markets, or the first tracked pair when opened via the Terminal tab (specs/mobile-screens.md).
 export function MarketDetailScreen({ route }: Props) {
   const { t, i18n } = useTranslation(['market-details', 'common']);
   const pairsMetaQuery = usePairsMeta();
 
-  // Falls back to whatever's already live/MMKV-cached in the store when /pairs/meta is
-  // down or still loading — without this, a cold launch or backend outage left the pair
-  // permanently unresolved and the screen never left its loading state, even though cached
-  // data existed (mobile-screens.md, ADR-M7).
+  // Falls back to live/MMKV-cached store data when /pairs/meta is down or loading, so a cold launch never sticks on the loading state (ADR-M7).
   const liveTrackedPairs = useMarketStore(useShallow((state) => Object.keys(state.pairs)));
   const pair = route.params?.pair ?? pairsMetaQuery.data?.pairs[0]?.symbol ?? liveTrackedPairs[0];
   const meta = pairsMetaQuery.data?.pairs.find((p) => p.symbol === pair);
 
-  // Telemetry's TopAppBar shows this same pair (confirmed against Figma) - kept in sync
-  // via uiStore rather than each screen re-deriving it independently.
+  // Telemetry's TopAppBar shows the same pair; kept in sync via uiStore.
   const setSelectedPair = useUiStore((state) => state.setSelectedPair);
   useEffect(() => {
     if (pair) setSelectedPair(pair);
   }, [pair, setSelectedPair]);
-  // Bottom Tabs keeps this screen mounted once visited, even while another tab is active -
-  // without this, Terminal kept re-rendering its full tree (including OrderBookView's 20
-  // rows and a real BlurView redraw) on every ~100ms WS tick regardless of which tab the
-  // user was actually looking at, which was the dominant cause of the JS thread FPS drops
-  // reported live in Telemetry. Paused, not torn down - resumes showing live data the
-  // instant this tab regains focus, no extra resync needed (see useMarketData).
+  // Bottom Tabs keeps this screen mounted, so pause subscriptions while unfocused instead of re-rendering the full tree on every WS tick (ADR-M11).
   const isFocused = useIsFocused();
   const marketData = useMarketData(pair ?? '', { enabled: isFocused });
   const baseAsset = useMemo(() => parseBaseAsset(meta?.displayName, pair ?? ''), [meta?.displayName, pair]);
@@ -83,9 +72,7 @@ export function MarketDetailScreen({ route }: Props) {
           ? colors.signal.negative
           : colors.text.primary;
 
-  // "Liquidity Gap" isn't a backend field — derived here from the real order book totals
-  // (Figma's "Depth Legend/Overlay" shows it alongside Pressure, but the assignment
-  // doesn't require it, so this is a defensible client-side computation, not a fake value).
+  // Liquidity Gap isn't a backend field; it is derived client-side from the order book totals.
   const liquidityGap = useMemo(() => {
     if (marketData == null) return null;
     const bidTotal = marketData.bids.reduce((sum, level) => sum + level.quantity, 0);
@@ -108,21 +95,16 @@ export function MarketDetailScreen({ route }: Props) {
         : colors.signal.positive;
 
   if (!pair) {
-    // No tracked pairs resolved yet - cold launch with the backend unreachable (no REST
-    // response, no WS tick, and no MMKV cache since nothing has ever synced). Still full
-    // chrome (TopAppBar + BottomNavBar), not a bare spinner with no way to navigate away -
-    // both /pairs/meta and the WS connection retry indefinitely on their own, so this
-    // resolves itself the moment either succeeds.
+    // No pair resolved yet (cold launch, backend unreachable): keep the full chrome so the user can navigate; REST and WS retry on their own.
     return (
       <View style={styles.container}>
         <TopAppBar title={t('common:nav.terminal')} />
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Explains the wait and offers a manual nudge - the WS connection already
-          retries forever on its own, but /pairs/meta's retries are finite (TanStack
-          Query's default), so once those are exhausted this is the only way to prompt
-          another REST attempt without restarting the app. */}
           <View style={styles.waitingBanner}>
             <Text style={styles.waitingText}>{t('waitingForConnection')}</Text>
+            {pairsMetaQuery.error ? (
+              <Text style={styles.errorText}>{t(`common:${toAppError(pairsMetaQuery.error).i18nKey}`)}</Text>
+            ) : null}
             <Pressable
               style={styles.retryButton}
               onPress={() => pairsMetaQuery.refetch()}
@@ -150,10 +132,6 @@ export function MarketDetailScreen({ route }: Props) {
           <TerminalSkeleton />
         ) : (
           <>
-            {/* One cohesive panel (LAST PRICE through Spread/Buy/Sell Pressure) on its own
-            background - #141C28, distinct from the screen's base background - not a flat
-            continuation of it. paddingBottom is the breathing room before the order book
-            table, which was previously flush against the Spread/Buy/Sell row. */}
             <View style={styles.priceInfoPanel}>
               <View style={styles.priceSection}>
                 <Text style={styles.priceLabel}>{t('lastPrice')}</Text>
@@ -190,9 +168,6 @@ export function MarketDetailScreen({ route }: Props) {
             <View style={styles.depthPanel}>
               <MarketDepthChart />
 
-              {/* Top-left block: title, then bullets inline beside each other on the next
-              line - matches Figma exactly (was: bullets stacked vertically, split to the
-              right of the title). */}
               <View style={styles.depthTopLeft}>
                 <Text style={styles.depthTitle}>{t('marketDepth')}</Text>
                 {liquidityGap && (
@@ -219,11 +194,6 @@ export function MarketDetailScreen({ route }: Props) {
                 )}
               </View>
 
-              {/* Bottom-right floating box, not full width - matches Figma exactly (was:
-              a full-width box in normal flow below the header). Real background blur
-              (Figma: 12), not just a translucent fill - BlurView provides the blur, a
-              tinted overlay on top of it provides the exact color, since BlurView's own
-              `tint` only accepts light/dark/default, not an arbitrary hex. */}
               <View style={styles.depthLegendBox}>
                 <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={[StyleSheet.absoluteFill, styles.depthLegendTint]} />
@@ -268,22 +238,14 @@ function StatCell({ label, value, valueColor }: { label: string; value: string; 
   );
 }
 
-// Memoized on `meta` alone (TanStack Query's cached /pairs/meta data, which only changes
-// on a ~60s refetch or pull-to-refresh) so this row doesn't re-render on every ~100ms WS
-// tick along with the rest of the screen, even though its own values never move that often.
+// Memoized on `meta` (changes only on refetch) so it doesn't re-render on every WS tick.
 const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | undefined }) {
   const { t, i18n } = useTranslation('market-details');
   return (
-    // Own row style, not statRow: this is nested inside priceSection, which already
-    // applies paddingHorizontal - reusing statRow's own paddingHorizontal here doubled
-    // the inset (the "24H HIGH has extra left padding" bug). statRow's padding is for the
-    // standalone Spread/Buy/Sell row below, which isn't nested in a padded parent.
+    // Own row style, not statRow: statRow's paddingHorizontal would double the inset inside priceSection.
     <View style={styles.priceStatsRow}>
       <StatCell label={t('high24h')} value={meta ? formatPrice(meta.high24h, i18n.language) : '—'} />
       <StatCell label={t('low24h')} value={meta ? formatPrice(meta.low24h, i18n.language) : '—'} />
-      {/* Figma's top stat row is High/Low/Market Cap, not Volume - matches exactly.
-      marketCap is a static placeholder (see contracts/schemas.ts), same treatment as the
-      Telemetry screen's other display-only values (ADR-M10). */}
       <StatCell
         label={t('marketCap')}
         value={meta ? formatCompactNumber(meta.marketCap, i18n.language) : '—'}
@@ -303,6 +265,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxl,
   },
   waitingText: { color: colors.text.label, ...typography.bodySmall, textAlign: 'center' },
+  errorText: { color: colors.signal.negative, ...typography.bodySmall, textAlign: 'center' },
   retryButton: {
     backgroundColor: colors.background.card,
     borderWidth: 1,
@@ -312,47 +275,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   retryText: { color: colors.signal.positive, ...typography.labelCaps },
-  // Verified color - was a flat continuation of the screen's own background.
   priceInfoPanel: { backgroundColor: colors.background.navBar, paddingBottom: spacing.lg },
-  // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.xl },
-  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
   priceLabel: { color: colors.text.numeric, ...typography.labelCaps },
-  // Baseline-aligned, not center-aligned: the percent badge sits on the same text line as
-  // the price, not floated in the vertical middle of the large price digits (Figma shows
-  // both inline at the same baseline).
+  // Baseline-aligned so the percent badge shares the price's text line.
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  // Was tableValueSmall (10px/10 line-height) with an ad-hoc fontSize:14 override that left
-  // the line-height too tight for the larger size - tableValue is the real 14px/14 token.
-  // flexShrink: 0 - was wrapping onto a second line ("4.15%" dropping below the "▲") when
-  // the row ran short on width, since RN will shrink/wrap a Text's own content by default
-  // rather than let it overflow; numberOfLines={1} on the Text itself is the other half.
+  // flexShrink: 0 stops the value wrapping onto a second line when the row is narrow.
   changeInline: { ...typography.tableValue, flexShrink: 0 },
   statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.xl },
-  // No marginTop of its own now - priceSection's gap:xs already provides spacing between
-  // its children; this row's separate 16px marginTop stacked on top of that, making the
-  // gap to LAST PRICE larger than intended.
   priceStatsRow: { flexDirection: 'row', gap: spacing.xl },
-  // No flex:1: sized to content, matching Figma's tightly-packed columns instead of
-  // evenly-stretched thirds. This also fixes a real bug - flex:1 inside depthLegendBox
-  // (an absolutely-positioned, auto-width container with no definite main-axis size to
-  // grow against) was collapsing the Liquidity Gap/Pressure StatCells to zero width,
-  // making that box invisible even though it was rendering.
+  // No flex:1: inside the auto-width absolute depthLegendBox it collapses the cells to zero width.
   statCell: {},
-  // text.primary (near-white), not text.label (dim gray) - Figma shows these stat labels
-  // (24H HIGH/LOW/MARKET CAP, Spread/Buy Pressure/Sell Pressure) bright and bold, unlike
-  // the dimmer standalone section eyebrows (LAST PRICE, MARKET DEPTH).
-  // text.numeric (#C6C6CB) - verified value, covers 24H HIGH/LOW/MARKET CAP, Spread/Buy
-  // Pressure/Sell Pressure, and LIQUIDITY GAP/PRESSURE (all share this StatCell).
   statLabel: { color: colors.text.numeric, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
-  // Edge-to-edge (no horizontal margin), no marginTop, and no borderRadius - Figma shows
-  // the Market Depth card flush against the order book directly above it and bleeding to
-  // both screen edges. A radius on a truly edge-to-edge card reveals a sliver of the
-  // screen's own background color at the top/bottom-right corners where the curve pulls
-  // away from the device edge - that sliver was the reported "right side gap."
-  // borderTop is this panel's own top edge, not a separate divider View floating above it
-  // with a gap (same lesson as the order book header's hairline).
+  // Edge-to-edge with no radius: a radius would expose the screen background at the corners.
   depthPanel: {
     backgroundColor: colors.background.card,
     minHeight: 220,
@@ -361,20 +297,12 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.08)',
   },
   depthTopLeft: { position: 'absolute', top: spacing.lg, left: spacing.lg, gap: spacing.sm },
-  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
   depthTitle: { color: colors.text.numeric, ...typography.labelCaps },
   depthBullets: { flexDirection: 'row', gap: spacing.md },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
-  // Reverted back to a genuinely floating inset card (all 4 corners rounded, margin from
-  // both edges) after a high-res reference confirmed this was correct all along - the
-  // "flush corner" change in a prior round was wrong; the reported right-side gap was
-  // never this box, and remains unresolved as a separate issue on the panel itself.
-  // overflow:'hidden' clips the BlurView/tint layers to the rounded corners; padding here
-  // (not on a separate content wrapper) still correctly insets depthStatRow, since RN's
-  // padding only affects normally-flowing children - the two absolute-fill layers below
-  // ignore it and cover the box edge-to-edge, which is what a background blur needs.
+  // overflow:'hidden' clips the blur/tint layers to the rounded corners; padding doesn't affect the absolute-fill layers.
   depthLegendBox: {
     position: 'absolute',
     bottom: spacing.lg,
@@ -390,8 +318,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
-  // ~80% opacity tint over the BlurView - verified color (was mistakenly the border color
-  // in an earlier round).
   depthLegendTint: { backgroundColor: `${colors.background.divider}CC` },
   depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   depthStatDivider: { width: 1, height: 32, backgroundColor: colors.background.divider },

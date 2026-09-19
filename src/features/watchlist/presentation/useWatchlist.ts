@@ -1,3 +1,4 @@
+import { toAppError } from '../../../core/api/errors';
 import { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
@@ -9,28 +10,18 @@ import type { TradingPairSymbol } from '../../../core/domain/models/TradingPair'
 export interface WatchlistRow {
   symbol: TradingPairSymbol;
   displayName: string;
-  /** false = no /pairs/meta entry for this pair (either genuinely untracked, or the REST
-   * call is down/loading and only live/cached WS data is available) — ADR-M8. */
+  /** false when /pairs/meta has no entry for this pair: untracked, or REST is down and only live/cached WS data exists (ADR-M8). */
   isTracked: boolean;
   isFavourite: boolean;
 }
 
-// Row set = union of tracked pairs (from /pairs/meta) and favourited pairs (ADR-M8's
-// untracked-favourite handling) — filtered by the search query, client-side, no debounce
-// needed at this data volume (five to ~eight rows).
+// Union of tracked and favourited pairs (ADR-M8), filtered client-side; no debounce needed at ~8 rows.
 export function useWatchlist() {
   const pairsMetaQuery = usePairsMeta();
   const { favourites, toggle } = useFavourites();
   const [searchQuery, setSearchQuery] = useState('');
-  // Read directly from the store (not via IMarketRepository, which has no "reactive list
-  // of keys" method — only per-pair subscribe). This is what keeps the watchlist populated
-  // from live/MMKV-cached WS data even when /pairs/meta is down or still loading — without
-  // it, the row set was entirely REST-dependent and never fell back to cached data, which
-  // is exactly the "keep showing the most recently received data" requirement this was
-  // missing (mobile-screens.md's loading/error-state section, ADR-M7).
-  // useShallow avoids an infinite render loop: Object.keys() returns a new array
-  // reference every call, which Zustand's default Object.is check would otherwise treat
-  // as "changed" on every single render.
+  // Read from the store directly (IMarketRepository has no reactive key list) so the list falls back to live/cached data when /pairs/meta is down (ADR-M7).
+  // useShallow: Object.keys() returns a new array each call, which would loop under Object.is.
   const liveTrackedPairs = useMarketStore(useShallow((state) => Object.keys(state.pairs)));
 
   const rows = useMemo<WatchlistRow[]>(() => {
@@ -65,5 +56,6 @@ export function useWatchlist() {
     toggleFavourite: toggle,
     refetch: pairsMetaQuery.refetch,
     isRefetching: pairsMetaQuery.isRefetching,
+    metaError: pairsMetaQuery.error ? toAppError(pairsMetaQuery.error) : null,
   };
 }
