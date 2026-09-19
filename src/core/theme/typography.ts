@@ -10,6 +10,11 @@
 // fallback for the brief window before useFonts() resolves (or a build that hasn't picked
 // up the font-loading config plugins via a native rebuild yet) - without it, that window
 // renders at the OS default weight instead of an approximation of the real one.
+//
+// letterSpacing: 0.55 on every token below - a verified value reported directly from
+// Figma ("for all texts"). headingLarge is the one exception, kept at its own separately-
+// verified 0 (pulled from that specific text layer's Inspect panel in an earlier round) -
+// if that should also be 0.55, say so and it'll be brought in line with the rest.
 
 export const typography = {
   priceDisplay: {
@@ -17,25 +22,28 @@ export const typography = {
     fontWeight: '700',
     fontSize: 32,
     lineHeight: 38.4,
-    // Verified-pending: design-tokens.md doesn't have an extracted letterSpacing value for
-    // this token (Figma API access has been rate-limited all session). This tightens the
-    // default advance width of a 32px monospace price display toward Figma's denser look -
-    // confirm the exact value in Figma's Inspect panel (select the LAST PRICE text layer,
-    // Typography section, "Letter spacing") and this will be corrected to match exactly.
-    letterSpacing: -1,
+    letterSpacing: 0.55,
   },
-  tableValue: { fontFamily: 'JetBrainsMono_500Medium', fontWeight: '500', fontSize: 14, lineHeight: 14 },
+  tableValue: {
+    fontFamily: 'JetBrainsMono_500Medium',
+    fontWeight: '500',
+    fontSize: 14,
+    lineHeight: 14,
+    letterSpacing: 0.55,
+  },
   tableValueSmall: {
     fontFamily: 'JetBrainsMono_400Regular',
     fontWeight: '400',
     fontSize: 10,
     lineHeight: 10,
+    letterSpacing: 0.55,
   },
   tableValueLarge: {
     fontFamily: 'JetBrainsMono_500Medium',
     fontWeight: '500',
     fontSize: 16,
     lineHeight: 16,
+    letterSpacing: 0.55,
   },
   // textTransform: 'uppercase' makes this token reliably all-caps regardless of the source
   // string's own casing (was: relying on every caller to type its string in caps already,
@@ -47,10 +55,29 @@ export const typography = {
     fontSize: 11,
     lineHeight: 11,
     textTransform: 'uppercase',
+    letterSpacing: 0.55,
   },
-  body: { fontFamily: 'Inter_400Regular', fontWeight: '400', fontSize: 14, lineHeight: 21 },
-  bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: '400', fontSize: 12, lineHeight: 16.8 },
-  heading: { fontFamily: 'HankenGrotesk_600SemiBold', fontWeight: '600', fontSize: 20, lineHeight: 28 },
+  body: {
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+    fontSize: 14,
+    lineHeight: 21,
+    letterSpacing: 0.55,
+  },
+  bodySmall: {
+    fontFamily: 'Inter_400Regular',
+    fontWeight: '400',
+    fontSize: 12,
+    lineHeight: 16.8,
+    letterSpacing: 0.55,
+  },
+  heading: {
+    fontFamily: 'HankenGrotesk_600SemiBold',
+    fontWeight: '600',
+    fontSize: 20,
+    lineHeight: 28,
+    letterSpacing: 0.55,
+  },
   // Corrected against a value manually pulled from Figma's Inspect panel (Hanken Grotesk,
   // weight 600, 24px, line-height 31.2px, letter-spacing 0) - was 700/32/38.4, guessed
   // before that value was available. Only used by TelemetryScreen's page heading.
