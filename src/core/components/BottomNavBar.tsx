@@ -31,7 +31,7 @@ export function BottomNavBar() {
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {TABS.map(({ route, labelKey, icon }) => {
         const isActive = activeRoute === route;
-        const tintColor = isActive ? colors.signal.positive : colors.text.numeric;
+        const tintColor = isActive ? colors.signal.positive : colors.text.primary;
         return (
           <View key={route} style={styles.tab}>
             {/* The Pressable IS the rounded pill (not a plain rectangular Pressable
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.navBar,
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
+    gap: spacing.xs,
   },
   tab: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
   tabContent: {
@@ -79,7 +80,8 @@ const styles = StyleSheet.create({
   tabContentActive: { backgroundColor: `${colors.signal.positive}26` },
   // textTransform: 'none' overrides labelCaps' default uppercase - Figma's nav labels
   // ("Terminal", "Markets"...) are title case, not all-caps, unlike most other labelCaps
-  // usages in this app.
-  label: { color: colors.text.label, ...typography.labelCaps, textTransform: 'none' },
+  // usages in this app. color: text.primary (white), not text.label (dim gray) - was also
+  // inconsistent with the inactive icon's own tintColor, which already used a lighter gray.
+  label: { color: colors.text.primary, ...typography.labelCaps, textTransform: 'none' },
   labelActive: { color: colors.signal.positive },
 });

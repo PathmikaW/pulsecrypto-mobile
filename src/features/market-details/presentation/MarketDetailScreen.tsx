@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   loadingText: { color: colors.text.label, ...typography.bodySmall },
   // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.lg },
-  priceLabel: { color: colors.text.label, ...typography.labelCaps },
+  priceLabel: { color: colors.text.primary, ...typography.labelCaps },
   // Baseline-aligned, not center-aligned: the percent badge sits on the same text line as
   // the price, not floated in the vertical middle of the large price digits (Figma shows
   // both inline at the same baseline).
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   depthTopLeft: { position: 'absolute', top: spacing.lg, left: spacing.lg, gap: spacing.sm },
-  depthTitle: { color: colors.text.label, ...typography.labelCaps },
+  depthTitle: { color: colors.text.primary, ...typography.labelCaps },
   depthBullets: { flexDirection: 'row', gap: spacing.md },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
