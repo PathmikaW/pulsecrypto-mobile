@@ -1,5 +1,7 @@
+import { getCachedNumberFormat } from './intlFormatterCache';
+
 export function formatPrice(value: number, locale: string): string {
-  return new Intl.NumberFormat(locale, {
+  return getCachedNumberFormat(locale, {
     style: 'currency',
     currency: 'USD', // display currency for USDT-quoted pairs; not a claim about the asset itself
     minimumFractionDigits: 2,

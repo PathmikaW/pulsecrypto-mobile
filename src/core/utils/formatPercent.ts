@@ -1,5 +1,7 @@
+import { getCachedNumberFormat } from './intlFormatterCache';
+
 export function formatPercent(value: number, locale: string): string {
-  return new Intl.NumberFormat(locale, {
+  return getCachedNumberFormat(locale, {
     style: 'percent',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

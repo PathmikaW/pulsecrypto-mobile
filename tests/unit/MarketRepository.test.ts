@@ -65,4 +65,16 @@ describe('marketStore / marketRepository', () => {
 
     expect(marketRepository.getSnapshot('BTCUSDT')).not.toBeNull();
   });
+
+  it('updatePairs applies a whole batch in one commit, merging with pairs already tracked', () => {
+    useMarketStore.getState().updatePair('BTCUSDT', makeMarketData('BTCUSDT', 1));
+
+    useMarketStore.getState().updatePairs([
+      ['ETHUSDT', makeMarketData('ETHUSDT', 2)],
+      ['SOLUSDT', makeMarketData('SOLUSDT', 3)],
+    ]);
+
+    expect(marketRepository.getTrackedPairs().sort()).toEqual(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']);
+    expect(marketRepository.getSnapshot('ETHUSDT')?.price).toBe(2);
+  });
 });

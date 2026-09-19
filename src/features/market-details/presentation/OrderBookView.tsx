@@ -4,14 +4,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { OrderBookLevel } from '../../../core/domain/models/OrderBook';
 import { colors, spacing, typography } from '../../../core/theme';
+import { getCachedNumberFormat } from '../../../core/utils/intlFormatterCache';
 
 const DISPLAY_DEPTH = 10; // rows shown per side - a display choice, independent of the
 // backend's ORDER_BOOK_PRESSURE_DEPTH (which happens to also default to 10)
 
 function formatOrderBookNumber(value: number, locale: string, fractionDigits: number): string {
   // Order book cells are plain grouped numbers, no currency symbol (verified against the
-  // Figma file's own "64,239.50" style — only the main price ticker gets a "$").
-  return new Intl.NumberFormat(locale, {
+  // Figma file's own "64,239.50" style — only the main price ticker gets a "$"). Cached
+  // formatter (ADR-M10 perf pass) - this runs up to 60x/tick across the visible rows.
+  return getCachedNumberFormat(locale, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
