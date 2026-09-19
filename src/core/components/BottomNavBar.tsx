@@ -31,23 +31,36 @@ export function BottomNavBar() {
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       {TABS.map(({ route, labelKey, icon }) => {
         const isActive = activeRoute === route;
-        const tintColor = isActive ? colors.signal.positive : colors.text.primary;
         return (
           <View key={route} style={styles.tab}>
-            {/* The Pressable IS the rounded pill (not a plain rectangular Pressable
-            wrapping a separately-rounded inner View) - Android's ripple clips to
-            whichever node hosts it, so putting the radius on a different element than
-            the Pressable showed a square ripple flash before the rounded pill appeared.
-            android_ripple is themed green instead of the OS default gray. */}
+            {/* No android_ripple - Android's native ripple mask can paint square for a
+            frame before catching up to a Pressable's own borderRadius, regardless of
+            overflow:'hidden' (a known platform timing quirk, not a style mistake). Driven
+            by Pressable's own `pressed` state instead - same fix already used for
+            AccountDrawer's DrawerLink for the identical class of problem. */}
             <Pressable
-              style={[styles.tabContent, isActive && styles.tabContentActive]}
+              style={({ pressed }) => [styles.tabContent, (isActive || pressed) && styles.tabContentActive]}
               onPress={() => navigation.navigate(route)}
-              android_ripple={{ color: `${colors.signal.positive}40`, borderless: false }}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >
-              <Icon name={icon} size={20} color={tintColor} />
-              <Text style={[styles.label, isActive && styles.labelActive]}>{t(labelKey)}</Text>
+              {({ pressed }) => {
+                // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+                const tintColor = isActive || pressed ? colors.signal.positive : colors.text.numeric;
+                return (
+                  <>
+                    <Icon name={icon} size={20} color={tintColor} />
+                    <Text
+                      style={[styles.label, (isActive || pressed) && styles.labelActive]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.75}
+                    >
+                      {t(labelKey)}
+                    </Text>
+                  </>
+                );
+              }}
             </Pressable>
           </View>
         );
@@ -62,7 +75,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.navBar,
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
-    gap: spacing.xs,
   },
   tab: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
   tabContent: {
@@ -80,8 +92,7 @@ const styles = StyleSheet.create({
   tabContentActive: { backgroundColor: `${colors.signal.positive}26` },
   // textTransform: 'none' overrides labelCaps' default uppercase - Figma's nav labels
   // ("Terminal", "Markets"...) are title case, not all-caps, unlike most other labelCaps
-  // usages in this app. color: text.primary (white), not text.label (dim gray) - was also
-  // inconsistent with the inactive icon's own tintColor, which already used a lighter gray.
-  label: { color: colors.text.primary, ...typography.labelCaps, textTransform: 'none' },
+  // usages in this app. color: text.numeric (#C6C6CB) - verified value, matching tintColor.
+  label: { color: colors.text.numeric, ...typography.labelCaps, textTransform: 'none' },
   labelActive: { color: colors.signal.positive },
 });
