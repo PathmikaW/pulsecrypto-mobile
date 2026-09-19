@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.background.card,
+    backgroundColor: colors.background.depthLegend,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     borderRadius: radius.card,

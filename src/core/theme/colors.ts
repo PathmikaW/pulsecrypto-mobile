@@ -9,6 +9,9 @@ export const colors = {
     card: '#1E2633',
     tableHeader: '#222A37',
     divider: '#2D3543',
+    // The Market Depth panel's floating Liquidity Gap/Pressure overlay specifically -
+    // distinct from the general `card` tone.
+    depthLegend: '#45474B',
   },
   text: {
     primary: '#DBE3F4',
