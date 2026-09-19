@@ -11,8 +11,7 @@ interface State {
   hasError: boolean;
 }
 
-// Single top-level boundary wrapping the navigator (ADR-M6, v8.1) — no per-screen
-// boundaries. A rendering bug degrades to this recoverable fallback, not a native crash.
+// Single top-level boundary (ADR-M6); no per-screen boundaries.
 class ErrorBoundaryBase extends Component<Props, State> {
   state: State = { hasError: false };
 

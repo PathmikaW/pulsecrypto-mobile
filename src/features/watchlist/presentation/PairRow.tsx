@@ -15,16 +15,11 @@ interface PairRowProps {
   row: WatchlistRow;
   onPress: (pair: TradingPairSymbol) => void;
   onToggleFavourite: (pair: TradingPairSymbol) => void;
-  // Bottom Tabs keeps Watchlist mounted once visited even while another tab is active -
-  // without this, every visible row kept re-subscribing to its own pair's WS-driven
-  // updates (and re-rendering) while nobody could see the list at all. See the identical
-  // reasoning on MarketDetailScreen/useMarketData.
+  // Bottom Tabs keeps Watchlist mounted; unsubscribe while unfocused (ADR-M11, see useMarketData).
   isFocused: boolean;
 }
 
-// React.memo + a per-pair Zustand-backed subscription (useMarketData) so recycling and
-// selector-scoping work together (ADR-M3): a price update to one pair only re-renders its
-// own row, not the whole list.
+// memo + per-pair subscription: a price update re-renders only its own row (ADR-M3).
 function PairRowComponent({ row, onPress, onToggleFavourite, isFocused }: PairRowProps) {
   const { t } = useTranslation('favourites');
   const marketData = useMarketData(row.symbol, { enabled: isFocused });
@@ -78,7 +73,5 @@ const styles = StyleSheet.create({
   leading: { gap: spacing.xs },
   symbol: { color: colors.text.primary, ...typography.body },
   trailing: { alignItems: 'flex-end', gap: spacing.xs },
-  // Was fontSize/lineHeight only, with no fontFamily at all - silently rendering the OS
-  // system font instead of JetBrains Mono, same bug class as the site-wide font-loading fix.
   price: { ...typography.tableValueLarge },
 });

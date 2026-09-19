@@ -12,17 +12,8 @@ import { ComingSoonDialog } from './ComingSoonDialog';
 const PANEL_WIDTH_RATIO = 0.82; // 320 of the Terminal frame's 390 (verified in Figma)
 const ANIMATION_DURATION_MS = 250;
 
-// Maps to Figma's "Aside — Side Navigation Drawer" (node 1:271). A single global overlay,
-// mounted once at the app root (app.tsx) and opened from any screen's TopAppBar via
-// uiStore - not a per-screen instance. Slides in horizontally on the UI thread via
-// reanimated (ADR-M4's "smooth, no lag" standard applies here too) - RN's built-in
-// <Modal animationType="slide"> only slides vertically, which is wrong for a side drawer,
-// so the Modal's own animation is disabled and this drives the motion instead.
-//
-// No account system, auth, or backend exists anywhere in this project - the profile
-// content and links are intentionally static/decorative (ADR-M10). Tapping a link surfaces
-// a "Coming Soon" notice rather than silently doing nothing, matching mobile-screens.md's
-// explicit allowance for no-ops or a placeholder destination on unimplemented features.
+// Single global overlay mounted at the app root and opened via uiStore. Reanimated drives the horizontal slide because
+// Modal's built-in animation is vertical-only. Content is static; links show a Coming Soon notice (ADR-M10).
 export function AccountDrawer() {
   const { t } = useTranslation('market-details');
   const insets = useSafeAreaInsets();
@@ -35,21 +26,13 @@ export function AccountDrawer() {
   const backdropOpacity = useSharedValue(0);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Render-phase state update (React's documented "adjust state during render" pattern,
-  // not a lint violation like a setState-in-effect would be) - mounts the Modal in the
-  // SAME commit as the isOpen flip, instead of an extra render -> effect -> render
-  // round-trip. That two-hop mount gate, not the reanimated animation itself (already
-  // UI-thread), was the actual cause of the open feeling delayed by "a few ms".
+  // Render-phase state update mounts the Modal in the same commit as the isOpen flip; an effect-based mount gate delayed opening (ADR-M11).
   if (isOpen && !isMounted) {
     setIsMounted(true);
   }
 
   useEffect(() => {
-    // Deliberately keyed on `isOpen` alone: this synchronizes the animation with an
-    // external system (the UI thread, via reanimated shared values), which is exactly
-    // what effects are for — the alternative (mounting immediately, unmounting only after
-    // the close animation's own completion callback fires) is the standard pattern for a
-    // slide-out-before-unmount drawer, not an accidental cascading render.
+    // Keyed on isOpen alone: syncs the animation with the UI thread, then unmounts once the close animation completes.
     if (isOpen) {
       translateX.value = withTiming(0, { duration: ANIMATION_DURATION_MS });
       backdropOpacity.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
@@ -59,10 +42,7 @@ export function AccountDrawer() {
         if (finished) runOnJS(setIsMounted)(false);
       });
     }
-    // Deps intentionally exclude panelWidth/translateX/backdropOpacity/isMounted: this
-    // effect is a one-shot "respond to the isOpen transition" handler, not a continuous
-    // sync - including the shared values or isMounted (which this effect itself writes)
-    // would either do nothing (shared values are stable refs) or cause a retrigger loop.
+    // Deps omit the shared values and isMounted: this is a one-shot transition handler, and including them would loop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
@@ -92,8 +72,6 @@ export function AccountDrawer() {
             panelStyle,
           ]}
         >
-          {/* Avatar sits left of the name/tier text block, not above it - an earlier reading
-          stacked them vertically; Figma has the icon and text side by side. */}
           <View style={styles.profile}>
             <View style={styles.avatar}>
               <Icon name="avatarPerson" size={28} color={colors.signal.positiveMuted} />
@@ -142,11 +120,7 @@ export function AccountDrawer() {
   );
 }
 
-// The green highlight is a press-feedback state, not a permanent "selected" one - an
-// earlier reading of Figma's pressed-state variant for "Trade History" mistook it for the
-// link's default/resting appearance. All four links behave identically; none is
-// permanently highlighted. Padding is fixed between states - only the background color
-// changes, so nothing shifts position when pressed.
+// The highlight is press feedback, not a selected state; padding is constant so nothing shifts on press.
 function DrawerLink({
   icon,
   label,
@@ -181,8 +155,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.recessed,
     gap: spacing.sm,
   },
-  // Horizontal padding lives on the content sections, not the panel itself, so the divider
-  // lines can span the drawer's full width edge-to-edge, matching Figma exactly.
   content: { paddingHorizontal: spacing.lg },
   profile: {
     flexDirection: 'row',
@@ -204,15 +176,12 @@ const styles = StyleSheet.create({
   tier: { color: colors.text.numeric, ...typography.bodySmall },
   tierId: { color: colors.signal.positive },
   divider: { height: 2, backgroundColor: colors.background.divider, marginBottom: spacing.md },
-  // More vertical breathing room around each group - was flush against its links.
   groupLabel: {
     color: colors.text.label,
     ...typography.labelCaps,
     marginTop: spacing.lg,
     marginBottom: spacing.md,
   },
-  // Extra top margin for "TRADING" specifically, not "ACCOUNT" (which shouldn't move
-  // further from the divider above it) - separates it more from Security above it.
   tradingGroupLabel: { marginTop: spacing.xxl },
   link: {
     flexDirection: 'row',
@@ -223,7 +192,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   linkPressed: { backgroundColor: colors.signal.positiveDeep },
-  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
   linkText: { color: colors.text.numeric, ...typography.body },
   signOutBorder: {
     marginTop: 'auto',
@@ -241,10 +209,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
   },
-  // text.primary (#DBE3F4, already correct) at weight 700 - body's own font is Inter
-  // 400 Regular; a custom TTF loaded via useFonts() doesn't synthesize other weights from
-  // it, so getting real bold means switching fontFamily to the 700 weight's own font file,
-  // not just adding fontWeight on top of the regular one.
+  // Real bold needs the 700 weight's own font file; fontWeight alone doesn't synthesize it.
   signOutText: {
     color: colors.text.primary,
     ...typography.body,

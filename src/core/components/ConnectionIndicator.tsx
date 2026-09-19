@@ -11,10 +11,7 @@ const STATUS_COLOR = {
   disconnected: colors.signal.negative,
 } as const;
 
-// Reflects the single global connection state (ADR-M7) — never a per-row state. Owned by
-// `useWebSocket`, read here via `marketStore.connectionStatus`. Memoized (takes no props)
-// since it's rendered on every screen and would otherwise re-render on every parent tick
-// even though its own selector rarely changes.
+// Memoized: rendered on every screen and would otherwise re-render on each parent tick.
 function ConnectionIndicatorComponent() {
   const { t } = useTranslation();
   const status = useMarketStore((state) => state.connectionStatus);

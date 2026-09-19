@@ -7,9 +7,7 @@ const SUFFIXES: readonly { threshold: number; suffix: string }[] = [
   { threshold: 1e3, suffix: 'K' },
 ];
 
-// Matches Figma's abbreviated stat style (e.g. "1.2T", "1.2k BTC") — a raw
-// toLocaleString() of a real 24h volume figure is an unreadably long string
-// ("1,603,963,507.375") for a small stat cell.
+// Abbreviated stats ("1.2T"): a raw toLocaleString of a 24h volume is too long for a stat cell.
 export function formatCompactNumber(value: number, locale: string): string {
   const abs = Math.abs(value);
   const match = SUFFIXES.find((s) => abs >= s.threshold);

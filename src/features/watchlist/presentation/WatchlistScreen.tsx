@@ -17,7 +17,8 @@ export function WatchlistScreen() {
   const { t } = useTranslation('watchlist');
   const navigation = useNavigation<Navigation>();
   const isFocused = useIsFocused();
-  const { rows, searchQuery, setSearchQuery, toggleFavourite, refetch, isRefetching } = useWatchlist();
+  const { rows, searchQuery, setSearchQuery, toggleFavourite, refetch, isRefetching, metaError } =
+    useWatchlist();
 
   const handlePairPress = useCallback(
     (pair: string) => navigation.navigate('Terminal', { pair }),
@@ -40,6 +41,7 @@ export function WatchlistScreen() {
     <View style={styles.container}>
       <TopAppBar title={t('title')} />
       <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
+      {metaError ? <Text style={styles.error}>{t(`common:${metaError.i18nKey}`)}</Text> : null}
       <View style={styles.listContainer}>
         <FlashList
           data={rows}
@@ -57,5 +59,12 @@ export function WatchlistScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
   listContainer: { flex: 1 },
+  error: {
+    color: colors.signal.negative,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    ...typography.bodySmall,
+  },
   empty: { color: colors.text.label, textAlign: 'center', marginTop: spacing.xxl, ...typography.body },
 });

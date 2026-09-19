@@ -41,7 +41,7 @@ dependencies (`react-native-mmkv`, `react-native-reanimated`, custom fonts) requ
 code Expo Go doesn't include.
 
 ```bash
-npx expo prebuild --clean
+pnpm expo prebuild --clean
 ```
 
 `android/` and `ios/` are generated, not committed — re-run this after any native
@@ -51,19 +51,19 @@ dependency changes (a new `expo install` package, a new config plugin), not on e
 
 ## Build and run
 
-**Android Emulator** (the assignment's required target):
+**Android Emulator** (the assignment's required target — this submission was built and exercised on a Pixel 8, API 35, emulator):
 
 ```bash
-npx expo run:android
+pnpm expo run:android
 ```
 
 **Physical Android device**: enable USB debugging, connect via USB (or same Wi-Fi for
 wireless ADB), confirm it's detected with `adb devices`, then run the same command above —
 Expo CLI prompts you to pick a target if both an emulator and a device are available, or use
-`npx expo run:android --device` to pick explicitly.
+`pnpm expo run:android --device` to pick explicitly.
 
 **Faster iteration after the first install** (no native changes): once the dev-client APK is
-installed on your target, `npx expo start --dev-client` reconnects to it without a full
+installed on your target, `pnpm expo start --dev-client` reconnects to it without a full
 rebuild.
 
 **Checks**
@@ -71,7 +71,8 @@ rebuild.
 ```bash
 pnpm run typecheck
 pnpm run lint
-pnpm test
+pnpm test              # Jest — 14 suites, 71 tests (unit; see Known limitations)
+pnpm run check:contracts   # diffs src/contracts/schemas.ts against the backend's copy on GitHub
 ```
 
 ---
@@ -85,9 +86,11 @@ pnpm test
 - **Favourites** — persisted in MMKV, restored synchronously on launch (no flash of empty
   state). A favourited pair the backend isn't currently tracking still renders, via
   `UntrackedFavouriteBadge`, rather than being silently hidden.
-- **Terminal** (Market Details) — price, buy/sell pressure, spread, a live order book (bids
-  and asks), and a last-updated timestamp sourced directly from the backend's own conflation
-  tick, not recomputed client-side.
+- **Terminal** (Market Details) — price, 24h high/low, buy/sell pressure, spread, a live order
+  book (bids and asks), a market-depth panel, and a last-updated timestamp (at the bottom of the
+  scrolling screen) sourced directly from the backend's own conflation tick, not recomputed
+  client-side. The "Market Cap" cell from the Figma design is a **static placeholder** (Binance
+  provides no such field).
 - **Live updates** — price changes flash green/red on the UI thread via
   `react-native-reanimated`; order-book bar widths animate smoothly on the same thread, so
   neither is blocked by JS-thread work processing the next incoming tick.
@@ -98,10 +101,16 @@ pnpm test
   dead.
 - **Pull-to-refresh** on the watchlist reloads `/pairs/meta` via TanStack Query, entirely
   independent of the WebSocket connection — it never touches it.
+- **REST error handling and retry** — the `/pairs/meta` call goes through an axios client with a
+  10 s timeout. Every failure becomes one `AppError` (network, timeout, HTTP, validation,
+  cancelled, unknown) with a `retryable` flag; only transient failures (no response, timeout,
+  HTTP 408/425/429/5xx) are retried — up to 3 times with 0.5 s → 1 s → 2 s exponential backoff
+  and jitter — while a 404 or a malformed payload fails immediately. When retries run out, a
+  localized message appears under the search field (or in Terminal's waiting state).
 - **Telemetry & Settings** + the account drawer — present in the Figma file but outside the
   assignment's functional requirements; built at full visual fidelity anyway (see
   [Trade-offs](#trade-offs-considered)). WS message rate and JS-thread FPS are real, live
-  measurements; everything else on that screen (throttling slider/toggles, drawer account
+  measurements (the FPS gauge read 55 on the emulator with eight pairs streaming); everything else on that screen (throttling slider/toggles, drawer account
   links, memory footprint) is explicitly local UI state or a labeled placeholder, not wired
   to anything real.
 
@@ -113,19 +122,21 @@ Full rationale, including options considered and rejected, lives in
 [`docs/adr/`](./docs/adr) (mirrored from the project-level ADR — start at
 [`docs/adr/00-overview.md`](./docs/adr/00-overview.md)). Summary:
 
-| Decision                 | Choice                                                                   | Why (short form)                                                                                                                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Framework                | **Expo, Dev Client + Continuous Native Generation**                      | Full native access (real, editable `android/`/`ios/` projects) without hand-maintaining native project files across every RN version bump                                                                                |
-| State — real-time        | **Zustand**                                                              | Selector-based re-renders scoped to only what changed, important at a 100ms update cadence                                                                                                                               |
-| State — REST             | **TanStack Query**                                                       | Caching, background refetch, loading/error states — an architectural boundary (client vs. server state) worth establishing even with one endpoint today                                                                  |
-| List rendering           | **FlashList**                                                            | Cell recycling instead of destroy/recreate, the property that matters under sustained update bursts                                                                                                                      |
-| Animation                | **react-native-reanimated**, UI-thread worklets                          | The single highest-leverage decision for staying smooth under load — a JS-thread animation approach would be the first thing to visibly degrade                                                                          |
-| Persistence              | **MMKV** via Zustand's `persist` middleware                              | Synchronous reads mean favourites (and cached last-known market state) render correctly on the very first frame, no flash of empty state                                                                                 |
-| WebSocket client         | **Custom hook**, broadcast-silence liveness, no heartbeat                | The backend already broadcasts on a fixed cadence when healthy — a separate ping/pong protocol would answer a question the data already answers                                                                          |
-| Project structure        | **Feature-first with a small shared `core/`**                            | Localized feature development, low merge-conflict surface, while still enforcing Clean Architecture boundaries within each feature and `core/`                                                                           |
-| Internationalization     | **i18next + react-i18next + expo-localization**, English shipped         | Retrofitting i18n onto hardcoded strings later is expensive; establishing the pattern now (including locale-aware `Intl` number/date formatting) is cheap                                                                |
-| Toggle / Slider controls | **Custom-built components**, not RN's `Switch` / a native slider library | Neither could be styled to match Figma's exact dimensions (track thickness, thumb size); built from scratch with reanimated (Toggle) and `PanResponder` + reanimated (Slider), no extra native dependency for the latter |
-| Styling                  | **`StyleSheet.create()`**, not NativeWind/Tailwind                       | Performance-first choice — StyleSheet avoids the runtime style-resolution overhead a Tailwind-in-RN approach adds, which matters at this update cadence                                                                  |
+| Decision                 | Choice                                                                               | Why (short form)                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP client & errors     | **axios** behind a small `HttpClient`, one `AppError` model, one shared retry policy | `fetch` has no timeout and TanStack Query's default retry re-attempts permanent failures (404, bad payload); a typed, retryable-aware error model fixes both, and the backoff arithmetic is shared with the WebSocket reconnect (ADR-M12) |
+| Navigation               | **React Navigation Bottom Tabs**, subscriptions gated on `useIsFocused()`            | The original Native Stack remounted a screen on every tab switch; Bottom Tabs keeps visited screens mounted, which makes off-screen live subscriptions the new hazard — so they pause while a screen isn't focused (ADR-M11)              |
+| Framework                | **Expo, Dev Client + Continuous Native Generation**                                  | Full native access (real, editable `android/`/`ios/` projects) without hand-maintaining native project files across every RN version bump                                                                                                 |
+| State — real-time        | **Zustand**                                                                          | Selector-based re-renders scoped to only what changed, important at a 100ms update cadence                                                                                                                                                |
+| State — REST             | **TanStack Query**                                                                   | Caching, background refetch, loading/error states — an architectural boundary (client vs. server state) worth establishing even with one endpoint today                                                                                   |
+| List rendering           | **FlashList**                                                                        | Cell recycling instead of destroy/recreate, the property that matters under sustained update bursts                                                                                                                                       |
+| Animation                | **react-native-reanimated**, UI-thread worklets                                      | The single highest-leverage decision for staying smooth under load — a JS-thread animation approach would be the first thing to visibly degrade                                                                                           |
+| Persistence              | **MMKV** via Zustand's `persist` middleware                                          | Synchronous reads mean favourites (and cached last-known market state) render correctly on the very first frame, no flash of empty state                                                                                                  |
+| WebSocket client         | **Custom hook**, broadcast-silence liveness, no heartbeat                            | The backend already broadcasts on a fixed cadence when healthy — a separate ping/pong protocol would answer a question the data already answers                                                                                           |
+| Project structure        | **Feature-first with a small shared `core/`**                                        | Localized feature development, low merge-conflict surface, while still enforcing Clean Architecture boundaries within each feature and `core/`                                                                                            |
+| Internationalization     | **i18next + react-i18next + expo-localization**, English shipped                     | Retrofitting i18n onto hardcoded strings later is expensive; establishing the pattern now (including locale-aware `Intl` number/date formatting) is cheap                                                                                 |
+| Toggle / Slider controls | **Custom-built components**, not RN's `Switch` / a native slider library             | Neither could be styled to match Figma's exact dimensions (track thickness, thumb size); built from scratch with reanimated (Toggle) and `PanResponder` + reanimated (Slider), no extra native dependency for the latter                  |
+| Styling                  | **`StyleSheet.create()`**, not NativeWind/Tailwind                                   | Performance-first choice — StyleSheet avoids the runtime style-resolution overhead a Tailwind-in-RN approach adds, which matters at this update cadence                                                                                   |
 
 **Performance work** (the assignment's explicit "responsive UI under sustained updates"
 requirement):
@@ -142,6 +153,17 @@ requirement):
   because a sibling's data ticked.
 - **Throttled MMKV writes** on the high-frequency market store, so persistence doesn't
   perform a disk write on every ~100ms tick.
+- **Focus-gated live subscriptions** — with Bottom Tabs every visited screen stays mounted, so
+  `useMarketData` takes an `enabled` flag driven by `useIsFocused()`; a hidden screen no longer
+  re-renders on every WS tick (this was found by watching the JS-thread FPS gauge collapse to
+  15–19 FPS with Terminal sitting in the background — ADR-M11).
+- **Price flash without React state** — the up/down flash direction is a Reanimated shared
+  value read inside the worklet, so a price tick causes no JS-thread re-render (ADR-M4).
+
+**Security:** outside `__DEV__` the app refuses to start unless the API and WebSocket URLs are
+`https://`/`wss://`, so a release build can't silently ship the plaintext development URLs.
+Incoming WebSocket messages and `/pairs/meta` responses are validated with Zod against the
+mirrored contract; a malformed message is dropped, never applied to the store.
 
 ---
 
@@ -153,8 +175,8 @@ requirement):
   resolved additional pairs are a bonus the UI handles gracefully (no hardcoded pair count
   anywhere in the mobile codebase).
 - English is the only shipped translation; the localization infrastructure (namespaced
-  strings, `Intl`-based formatting, a manual override mechanism) is fully wired so adding a
-  second language is a translation-file addition, not a re-architecture.
+  strings, `Intl`-based formatting, an MMKV language-override lookup at startup) is wired so adding a
+  second language is mostly a translation-file addition — but there is no in-app language picker yet.
 - The Android Emulator is the required verification target per the assignment; iOS Simulator
   support exists but wasn't the primary target during development.
 
@@ -169,7 +191,8 @@ requirement):
 - **Zustand + TanStack Query over one state library for everything** — two libraries instead
   of one, in exchange for a client-state/server-state boundary that's far cheaper to
   establish now than to retrofit after ad hoc `fetch` calls spread across screens.
-- **FlashList over FlatList** — cell recycling under sustained updates, with a disclosed
+- **FlashList over FlatList** — cell recycling under sustained updates (argued from FlashList's
+  documented behavior; no FlatList benchmark was run), with a disclosed
   maintenance-continuity note: FlashList's primary maintainer has announced reduced
   sponsorship of the project as part of an unrelated broader strategy shift, worth
   monitoring but not a reason to avoid the technically stronger choice today.
@@ -200,6 +223,24 @@ requirement):
 
 ---
 
+## Known limitations
+
+Stated plainly rather than left for a reviewer to find:
+
+- **Tests are unit tests only** (Jest: WebSocket state machine, stores, repositories, formatting,
+  the watchlist merge/search logic). `@testing-library/react-native` is installed but there are
+  no component tests, and no test renders the UI under a non-English locale. UI behaviour was
+  verified by running the app on the Android Emulator instead.
+- **No CI.** The Husky hooks (lint-staged, commitlint, and typecheck + tests on push) are the only
+  automated gate. The contract mirror is checked on demand with `pnpm run check:contracts`.
+- **English only, no language picker** — see Assumptions.
+- **`pnpm audit --prod` reports one moderate advisory** (`uuid`, transitive through Expo's
+  build-time config plugins — not part of the runtime bundle).
+- Telemetry/Settings controls, the account drawer's links, the memory-footprint figure and
+  Terminal's "Market Cap" are display-only (see above).
+
+---
+
 ## How AI-assisted development tools were used
 
 This project was built with **Claude Code** end-to-end, using a **spec-driven development**
@@ -225,7 +266,7 @@ Concretely:
   not its default appearance, and was corrected once flagged; a Market Depth panel's floating
   stat card was briefly changed to sit flush against the card's corner, then reverted once a
   higher-resolution reference showed it was meant to float with inset margin all along. Both
-  corrections are recorded in the affected files' own comments, not silently overwritten.
+  corrections are recorded in the git history, not silently overwritten.
 - **A real functional bug was found and fixed against the assignment's own stated
   requirement**: on a fresh install with the backend unreachable, the Terminal screen got
   stuck on a bare loading spinner with no navigation chrome at all — traced directly to the
@@ -238,8 +279,8 @@ Concretely:
   `pnpm run typecheck && pnpm run lint && pnpm test`, plus an `expo export` bundle check, run
   before every commit — not just asserted as done.
 - **Git workflow**: Gitflow branching, Conventional Commits, atomic commits per logical
-  change, all reviewed and committed by the developer. Claude Code never pushed to a remote
-  or merged a branch autonomously at any point.
+  change, all reviewed and committed by the developer. Claude Code pushed to a remote or merged
+  a branch only when explicitly told to for that change.
 - **Human review and correction**: the developer directed every scope decision recorded in
   this document (including whether to build the assignment-out-of-scope Telemetry/Settings
   screen and drawer at all), caught and corrected visual/behavioral misreadings across many

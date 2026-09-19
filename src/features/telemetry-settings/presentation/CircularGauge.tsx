@@ -11,9 +11,7 @@ interface CircularGaugeProps {
 
 const STROKE_WIDTH = 8;
 
-// Matches Figma's "Gauge: JS Thread" node (two overlapping vector paths — a background
-// ring and a progress arc), built with react-native-svg rather than approximated with
-// border/transform tricks.
+// Two overlapping vector paths (ring + progress arc) via react-native-svg, per Figma's "Gauge: JS Thread".
 export function CircularGauge({ value, max, unit, size = 128 }: CircularGaugeProps) {
   const radius = (size - STROKE_WIDTH) / 2;
   const circumference = 2 * Math.PI * radius;

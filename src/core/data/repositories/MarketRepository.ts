@@ -6,29 +6,22 @@ import type { TradingPairSymbol } from '../../domain/models/TradingPair';
 import type { IMarketRepository, Unsubscribe } from '../../domain/repositories/IMarketRepository';
 import type { ConnectionStatus } from '../sources/WebSocketSource';
 
-// The MMKV cache only needs to be reasonably fresh for the next cold launch (ADR-M5), not
-// disk-synced on every ~100ms WS tick — throttling the persisted write is a real
-// performance win at this update cadence (see createThrottledStorage's own comment).
+// The persisted cache only needs to be fresh for the next cold launch (ADR-M5), so writes are throttled.
 const PERSIST_THROTTLE_MS = 2000;
 
 interface MarketState {
   pairs: Record<TradingPairSymbol, MarketData>;
   connectionStatus: ConnectionStatus;
-  /** Real messages/sec over the last 1s window — powers the telemetry screen's "WS
-   * Message Ingestion Rate" card (ADR-M10: cheaply-real metrics get wired to real values). */
+  /** Messages/sec over the last 1s window, for the telemetry ingestion-rate card (ADR-M10). */
   wsMessageRate: number;
   updatePair: (pair: TradingPairSymbol, data: MarketData) => void;
-  /** Applies a batch of pair updates in a single set() / React commit - see useWebSocket's
-   * rAF-aligned flush (ADR-M10 perf pass). A backend broadcast tick sends ~8 near-simultaneous
-   * per-pair messages; committing them one at a time was up to 8 re-renders per tick. */
+  /** Applies a batch in one set(): a broadcast tick sends ~8 per-pair messages, and committing them one by one re-rendered up to 8 times. */
   updatePairs: (updates: [TradingPairSymbol, MarketData][]) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setWsMessageRate: (rate: number) => void;
 }
 
-// The WS-backed live data source (ADR-M8). `useWebSocket` is the sole writer, via
-// `updatePair`/`setConnectionStatus` — never cleared on disconnect (ADR-M7), so stale data
-// stays visible. MMKV-persisted so cold launch never shows an empty screen (ADR-M5).
+// WS-backed live store (ADR-M8). useWebSocket is the sole writer; data is never cleared on disconnect (ADR-M7) and is MMKV-persisted (ADR-M5).
 export const useMarketStore = create<MarketState>()(
   persist(
     (set) => ({
@@ -53,8 +46,7 @@ export const useMarketStore = create<MarketState>()(
   )
 );
 
-// Read-side facade satisfying IMarketRepository — keeps Zustand's own API out of
-// `watchlist`/`market-details`, which depend on the interface, not the store directly.
+// Read-side facade for IMarketRepository, keeping Zustand out of the features that depend on the interface.
 export const marketRepository: IMarketRepository = {
   subscribe(pair, onUpdate): Unsubscribe {
     return useMarketStore.subscribe((state, prevState) => {

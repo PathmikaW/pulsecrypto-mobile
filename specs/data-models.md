@@ -9,7 +9,7 @@ version of the same shapes.
 
 ```typescript
 interface OrderBookLevel {
-  price: number;    // quote currency (USDT)
+  price: number; // quote currency (USDT)
   quantity: number; // base asset quantity at this level
 }
 ```
@@ -27,14 +27,14 @@ interface OrderBook {
 
 ```typescript
 interface PairState {
-  pair: string;           // e.g. "BTCUSDT"
-  price: number;          // last trade / mark price
+  pair: string; // e.g. "BTCUSDT"
+  price: number; // last trade / mark price
   bids: OrderBookLevel[];
   asks: OrderBookLevel[];
-  change24h: number;      // percentage, from @ticker stream
-  updatedAt: number;      // ms epoch — last time this pair's state was mutated by an
-                           // incoming Binance message (NOT the same as lastUpdatedAt below,
-                           // which is set at broadcast time — see buffering-strategy.md)
+  change24h: number; // percentage, from @ticker stream
+  updatedAt: number; // ms epoch — last time this pair's state was mutated by an
+  // incoming Binance message (NOT the same as lastUpdatedAt below,
+  // which is set at broadcast time — see buffering-strategy.md)
 }
 ```
 
@@ -46,14 +46,14 @@ project requires (ADR §12.2).
 
 ```typescript
 interface MarketUpdate {
-  pair: string;           // "BTCUSDT"
-  timestamp: number;      // unix seconds — broadcast tick time (see buffering-strategy.md)
-  lastUpdatedAt: number;  // ms epoch — same tick's wall-clock time, set ONCE by the
-                           // conflation engine, never recomputed client-side (ADR-B4, §12.2)
+  pair: string; // "BTCUSDT"
+  timestamp: number; // unix seconds — broadcast tick time (see buffering-strategy.md)
+  lastUpdatedAt: number; // ms epoch — same tick's wall-clock time, set ONCE by the
+  // conflation engine, never recomputed client-side (ADR-B4, §12.2)
   price: number;
-  spread: number;         // ADR-B5 formula
-  buyPressure: number;    // 0-100, ADR-B5 formula
-  sellPressure: number;   // 0-100, = 100 - buyPressure, always
+  spread: number; // ADR-B5 formula
+  buyPressure: number; // 0-100, ADR-B5 formula
+  sellPressure: number; // 0-100, = 100 - buyPressure, always
   bids: OrderBookLevel[];
   asks: OrderBookLevel[];
 }
@@ -63,8 +63,8 @@ interface MarketUpdate {
 
 ```typescript
 interface PairMeta {
-  symbol: string;         // "BTCUSDT"
-  displayName: string;    // "BTC/USDT"
+  symbol: string; // "BTCUSDT"
+  displayName: string; // "BTC/USDT"
   tradingStatus: 'TRADING' | 'HALTED' | 'UNAVAILABLE';
   high24h: number;
   low24h: number;
@@ -77,8 +77,8 @@ interface PairMeta {
 ```typescript
 interface SupportedPairsMeta {
   pairs: PairMeta[];
-  resolvedAt: string;     // ISO 8601 — when the backend's pair list was last resolved
-                           // (startup time, or the last successful background retry — ADR-B3)
+  resolvedAt: string; // ISO 8601 — when the backend's pair list was resolved (startup time;
+  // there is no background retry, so it is fixed for the backend process's lifetime — ADR-B3)
 }
 ```
 

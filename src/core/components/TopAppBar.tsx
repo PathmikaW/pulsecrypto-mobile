@@ -10,10 +10,7 @@ interface TopAppBarProps {
   title: string;
 }
 
-// Shared header used by every screen (Figma's TopAppBar structure appears on Terminal and
-// Telemetry alike, with the same hamburger-opens-drawer pattern) - the drawer itself is a
-// single global overlay (see AccountDrawer, mounted once at the app root), not duplicated
-// per screen, so any screen's hamburger button opens the same instance.
+// Shared header; the AccountDrawer is one global overlay mounted at the app root.
 export function TopAppBar({ title }: TopAppBarProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -24,10 +21,6 @@ export function TopAppBar({ title }: TopAppBarProps) {
       <Pressable onPress={openDrawer} hitSlop={12} accessibilityLabel={t('common:menu')}>
         <Icon name="menu" size={22} color={colors.signal.positive} />
       </Pressable>
-      {/* Title + connection status are one adjacent block (matches Figma - the status sits
-      right next to the pair name, not independently centered), with the remaining space
-      pushing the pulse icon to the far right instead of splitting evenly around a centered
-      title. */}
       <View style={styles.titleGroup}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -47,8 +40,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
     gap: spacing.lg,
-    // Hairline under the header row, separating it from the screen's content below -
-    // Figma shows this on both Terminal and Telemetry.
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },

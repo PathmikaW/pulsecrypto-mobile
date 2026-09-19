@@ -1,3 +1,5 @@
+import { computeBackoffMs } from '../../utils/backoff';
+
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting';
 
 const BACKOFF_BASE_MS = 1000;
@@ -6,13 +8,11 @@ const BACKOFF_JITTER_RATIO = 0.2;
 
 export interface WebSocketSourceOptions {
   url: string;
-  /** Roughly MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS — mirrors the backend's own
-   * backpressure-eviction threshold (ADR-B4) so the two can't silently drift apart. */
+  /** ~MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS; mirrors the backend's eviction threshold (ADR-B4). */
   staleConnectionTimeoutMs?: number;
   onMessage: (raw: string) => void;
   onStatusChange: (status: ConnectionStatus) => void;
-  /** Called once a second with the count of messages received in that window — the real
-   * WS Message Ingestion Rate figure for the telemetry screen (ADR-M10). */
+  /** Called once a second with the messages received in that window. */
   onMessageRate?: (messagesPerSecond: number) => void;
   /** Injectable for tests — defaults to the global `WebSocket`. */
   createSocket?: (url: string) => WebSocket;
@@ -20,11 +20,8 @@ export interface WebSocketSourceOptions {
   now?: () => number;
 }
 
-// Framework-agnostic connection state machine (ADR-M6) — reconnection with exponential
-// backoff + jitter, and broadcast-silence liveness detection. No ping/pong of any kind:
-// the backend's fixed broadcast cadence is itself the liveness signal. Kept separate from
-// `core/hooks/useWebSocket.ts` so this state machine is unit-testable without React or a
-// real socket (ADR-M6 rationale #4).
+// Framework-agnostic connection state machine (ADR-M6): backoff + jitter reconnection and broadcast-silence liveness, no ping/pong.
+// Separate from useWebSocket so it is unit-testable without React or a real socket.
 export class WebSocketSource {
   private readonly url: string;
   private readonly staleConnectionTimeoutMs: number;
@@ -80,14 +77,12 @@ export class WebSocketSource {
     this.setStatus('disconnected');
   }
 
-  /** App backgrounded (ADR-M7): don't force-close an active socket, just stop attempting
-   * to reconnect if it drops — no point burning battery reconnecting off-screen. */
+  /** App backgrounded (ADR-M7): leave an active socket alone, but stop reconnecting if it drops. */
   pauseReconnectOnBackground(): void {
     this.backgroundPaused = true;
   }
 
-  /** App foregrounded: resume reconnection, and if already disconnected, attempt
-   * immediately rather than waiting for the next scheduled backoff tick. */
+  /** App foregrounded: resume reconnecting, immediately if already disconnected. */
   resumeOnForeground(): void {
     this.backgroundPaused = false;
     if (this.status === 'disconnected' && !this.stopped) {
@@ -154,9 +149,11 @@ export class WebSocketSource {
   }
 
   private nextBackoffDelay(): number {
-    const raw = Math.min(BACKOFF_BASE_MS * 2 ** this.reconnectAttempt, BACKOFF_CAP_MS);
-    const jitter = raw * BACKOFF_JITTER_RATIO * (Math.random() * 2 - 1);
-    return Math.max(0, Math.round(raw + jitter));
+    return computeBackoffMs(this.reconnectAttempt, {
+      baseMs: BACKOFF_BASE_MS,
+      capMs: BACKOFF_CAP_MS,
+      jitterRatio: BACKOFF_JITTER_RATIO,
+    });
   }
 
   private clearReconnectTimer(): void {

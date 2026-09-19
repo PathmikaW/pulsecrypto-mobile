@@ -1,3 +1,1 @@
-pnpm run typecheck
-# TODO: add `&& pnpm test` once Jest/RNTL is set up (Phase 3/4 — no test suite exists yet
-# on this scaffold branch; referencing a nonexistent "test" script would fail every push).
+pnpm run typecheck && pnpm test

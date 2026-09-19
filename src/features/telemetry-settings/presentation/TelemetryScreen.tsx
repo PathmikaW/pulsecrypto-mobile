@@ -10,16 +10,10 @@ import { DataThrottlingCard } from './DataThrottlingCard';
 import { MicroCard } from './MicroCard';
 import { PerformanceDashboardCard } from './PerformanceDashboardCard';
 
-// Built to Figma's "Telemetry & Settings" frame (node 1:314) at full fidelity - not an
-// assignment requirement, built because Figma specifies it in full (ADR-M10). Both the
-// "Telemetry" and "Settings" bottom nav tabs route here, matching Figma's single combined
-// destination for both.
+// Both the Telemetry and Settings tabs route here (ADR-M10).
 export function TelemetryScreen() {
   const { t } = useTranslation();
-  // TopAppBar shows the selected trading pair here too, same as Terminal - confirmed
-  // against Figma directly, not the "leftover" it first looked like (see
-  // specs/mobile-screens.md). Falls back to whatever's live/cached if Terminal hasn't been
-  // visited yet this session, same chain Terminal itself uses.
+  // Shows the same pair as Terminal, falling back to live/cached data if Terminal hasn't been visited.
   const selectedPair = useUiStore((state) => state.selectedPair);
   const liveTrackedPairs = useMarketStore(useShallow((state) => Object.keys(state.pairs)));
   const pair = selectedPair ?? liveTrackedPairs[0];

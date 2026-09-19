@@ -2,9 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '../theme';
 
-// A favourited pair outside the backend's currently-tracked set still renders — via this
-// badge — never hidden, never a crash (ADR-M8's untracked-favourite handling). Placed in
-// core/ rather than watchlist/ since it's a generic "no live data for this pair" indicator.
+// Shown for a favourited pair outside the tracked set; never hidden (ADR-M8). In core/ as a generic no-live-data indicator.
 export function UntrackedFavouriteBadge() {
   const { t } = useTranslation();
   return (

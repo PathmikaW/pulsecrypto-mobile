@@ -14,6 +14,7 @@ Zustand (a simple UI-facing field, per ADR-M2). `ConnectionIndicator`
 (`core/components/ConnectionIndicator.tsx`) renders it, localized (ADR-M9).
 
 **Transitions:**
+
 - App launch / socket construction → `connecting`
 - `onopen` fires → `connected`
 - Socket closes, errors, or the liveness timeout below fires while status was `connected`
@@ -24,7 +25,7 @@ Zustand (a simple UI-facing field, per ADR-M2). `ConnectionIndicator`
 ## Liveness detection — broadcast silence, no heartbeat
 
 The backend broadcasts every `BROADCAST_INTERVAL_MS` (100ms default) whenever healthy —
-that cadence *is* the liveness signal (ADR-M6). Do not implement or expect a ping/pong
+that cadence _is_ the liveness signal (ADR-M6). Do not implement or expect a ping/pong
 message from either side.
 
 ```typescript
@@ -52,6 +53,7 @@ attempt 3: ~4s
 attempt 4: ~8s
 attempt 5+: capped at 30s
 ```
+
 Add jitter (e.g. `±20%` random variance) to avoid a thundering-herd reconnect pattern if
 this were ever running against a shared backend with multiple clients reconnecting
 simultaneously — not critical for a single-device demo, but costs nothing to include and
@@ -86,6 +88,7 @@ and take down the socket handler.
 ## App backgrounding
 
 Use `AppState` (`core/hooks/useAppState.ts`) to detect background/foreground transitions:
+
 - On background: do not force-close the socket immediately, but stop actively reconnecting
   if disconnected — no point burning battery/network reconnecting to a screen nobody sees.
 - On foreground: if status is `disconnected`, immediately attempt reconnection rather than
@@ -96,7 +99,7 @@ Use `AppState` (`core/hooks/useAppState.ts`) to detect background/foreground tra
 **The Zustand `marketStore` is never cleared on disconnect.** The UI continues rendering
 the last-received `MarketData` for every pair, unchanged, for as long as the connection is
 down. This is the "continue showing the most recently received data" requirement — it is a
-property of *not doing anything* to the store on disconnect, not an active caching
+property of _not doing anything_ to the store on disconnect, not an active caching
 mechanism (the MMKV persistence in ADR-M5 additionally survives app restarts, which is a
 separate, complementary guarantee for cold launch).
 
@@ -110,6 +113,19 @@ Pull-to-refresh on the watchlist re-triggers TanStack Query's `refetch()` for
 existing one, or otherwise interact with `useWebSocket`'s state — those are two completely
 independent data paths (ADR-M2's client/server-state split exists precisely so this
 separation is structural, not something to be careful about by convention).
+
+## REST failures and retry (ADR-M12)
+
+`GET /pairs/meta` goes through the axios `HttpClient` (`core/api/httpClient.ts`, 10 s timeout).
+Every failure is normalized to an `AppError` (`core/api/errors.ts`) carrying `kind`, optional
+`status`, a `retryable` flag and an i18n key. The single retry policy (`core/api/retry.ts`,
+wired in `queryClient.ts`) retries **only** retryable errors — no response, timeout, HTTP
+408/425/429/500/502/503/504 — at most 3 times with 500 ms → 1 s → 2 s (cap 8 s) exponential
+backoff and ±20% jitter. A 4xx such as 404, a response that fails the contract schema, and a
+cancelled request are never retried. Retry exists in exactly one layer (the query), not also
+in axios. Once retries are exhausted the localized message is shown (Markets: under the search
+field; Terminal: in its waiting state). None of this touches the WebSocket path, which keeps
+its own reconnect state machine and shares only the backoff arithmetic (`core/utils/backoff.ts`).
 
 ## Testing
 

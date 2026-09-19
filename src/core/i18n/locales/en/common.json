@@ -40,5 +40,14 @@
     "msgsPerSec": "msgs/sec",
     "fps": "FPS"
   },
+  "errors": {
+    "network": "Can't reach the server. Check your connection.",
+    "timeout": "The server took too long to respond.",
+    "server": "The server ran into a problem. Please try again.",
+    "http": "The request couldn't be completed.",
+    "validation": "The server sent data the app doesn't understand.",
+    "cancelled": "Request cancelled.",
+    "unknown": "Something went wrong."
+  },
   "menu": "Menu"
 }

@@ -1,10 +1,6 @@
 const KNOWN_QUOTE_ASSETS = ['USDT'];
 
-// Figma always shows "BTC/USDT" formatting, never the raw "BTCUSDT" symbol. The REST
-// /pairs/meta call provides a real displayName, but the Terminal header shouldn't fall
-// back to an unformatted symbol just because that call hasn't resolved yet (or is down) -
-// every pair in this system is USDT-quoted (ADR-B3), so "BTC/USDT" can always be derived
-// directly from the symbol without needing the backend at all.
+// Derived from the symbol (every pair is USDT-quoted, ADR-B3) so the header never shows a raw symbol while /pairs/meta is unresolved.
 export function formatPairDisplayName(displayName: string | undefined, symbol: string): string {
   if (displayName) return displayName;
   const quote = KNOWN_QUOTE_ASSETS.find((q) => symbol.endsWith(q));

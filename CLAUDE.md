@@ -178,6 +178,11 @@ and `ios/` are generated, not committed.
 - **TanStack Query**: REST data (`/pairs/meta`) — caching, refetch, loading/error states.
 - Do not fetch REST data with ad hoc `fetch` + Zustand state — that's the exact pattern
   TanStack Query was adopted to avoid as the REST surface grows.
+- **All REST calls go through the axios `HttpClient` (`core/api/httpClient.ts`, ADR-M12)** —
+  never call `fetch`/axios directly from a feature. Failures leave that module as an
+  `AppError` (`core/api/errors.ts`); retry is decided in one place (`core/api/retry.ts`, wired
+  into `queryClient.ts`) and only for `retryable` errors. Do not add a second retry layer
+  (e.g. axios-retry) on top — it multiplies attempts. Show failures via `AppError.i18nKey`.
 - `marketStore.updatePair` sets `lastUpdatedAt` directly from the incoming payload field —
   **no client-side recomputation**. The backend's conflation tick is the single source of
   truth for that value.
@@ -287,20 +292,20 @@ src/
 - Number/date formatting uses `Intl.NumberFormat` / `Intl.DateTimeFormat` with the active
   locale — not hardcoded formatting. `core/utils/formatPrice.ts`, `formatPercent.ts`,
   `LastUpdatedLabel` all go through `Intl`, never manual string interpolation of numbers.
-- Manual language override persists via MMKV, reusing the favourites persistence pattern.
+- Manual language override is read from MMKV (`language-override`) at startup; nothing writes it yet — there is no in-app picker.
 
 **Contracts (ADR-X1):** `src/contracts/` is a mirrored copy of the backend's
-`contracts/schemas.ts`. CI diffs it against the backend's raw GitHub URL
-(`raw.githubusercontent.com/PathmikaW/pulsecrypto-backend/main/contracts/schemas.ts`) and
-fails the build on drift. If a screen needs a field that isn't in the mirror yet, that's a
+`contracts/schemas.ts`, kept byte-identical. `pnpm run check:contracts` diffs it against the
+backend's raw GitHub URL (`raw.githubusercontent.com/PathmikaW/pulsecrypto-backend/develop/contracts/schemas.ts`
+— `develop`, because `main` is unreleased) and fails on drift; there is no CI yet (ADR-X3). If a screen needs a field that isn't in the mirror yet, that's a
 backend contract change to request, not something to invent locally.
 
 ## Tech stack (verify exact patch versions at scaffold time — see ADR §5)
 
-Expo SDK 57 (RN 0.86, React 19.2) · pnpm (package manager, ADR-X5) · TypeScript 5.9.x ·
-React Navigation 7.x (Bottom Tabs — ADR-M11) · Zustand 5.x · TanStack Query 5.102.x · FlashList v2.x ·
+Expo SDK 57 (RN 0.86, React 19.2) · pnpm (package manager, ADR-X5) · TypeScript 6.0.x ·
+React Navigation 7.x (Bottom Tabs — ADR-M11) · Zustand 5.x · TanStack Query 5.x · axios 1.x · FlashList v2.x ·
 react-native-reanimated (install via `npx expo install`, do not pin independently) ·
-`react-native-mmkv` 3.x (via `npx expo install`) · i18next + react-i18next (plain
+`react-native-mmkv` 4.x (via `npx expo install`) · i18next + react-i18next (plain
 `pnpm add`) + expo-localization (via `npx expo install`) · Jest 30.x + React Native
 Testing Library 13.x
 

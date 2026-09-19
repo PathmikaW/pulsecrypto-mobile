@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-// Mirrored from pulsecrypto-backend's contracts/schemas.ts (ADR-X1). CI diff-checks this
-// file against that repo's raw GitHub URL on every build — do not hand-edit without also
-// updating the backend copy, or the mirror check will fail the build.
+// Source-of-truth wire-format schemas for this repo (ADR-X1). The mobile repo mirrors
+// this file into src/contracts/ and CI-diffs it against this file's raw GitHub URL —
+// treat any change here as a breaking change for that repo until its mirror is updated.
 
 export const OrderBookLevelSchema = z.object({
   price: z.number(),
@@ -33,7 +33,7 @@ export const PairMetaSchema = z.object({
   low24h: z.number(),
   volume24h: z.number(),
   // Static placeholder, not live data — Binance's ticker/24hr has no market-cap field
-  // (see the backend's domain/models/PairMeta.ts MARKET_CAP_PLACEHOLDER for why).
+  // (see domain/models/PairMeta.ts's MARKET_CAP_PLACEHOLDER for why).
   marketCap: z.number(),
 });
 

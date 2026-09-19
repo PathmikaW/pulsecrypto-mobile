@@ -20,8 +20,7 @@ function resolveInitialLocale(): string {
   return deviceLocale in resources ? deviceLocale : 'en';
 }
 
-// i18next's own documented init pattern — the default export and its named `use` export
-// are the same function (CJS/ESM interop), so this isn't the mistake the rule looks for.
+// Documented i18next init; the default export and its named `use` are the same function.
 // eslint-disable-next-line import/no-named-as-default-member
 void i18next.use(initReactI18next).init({
   compatibilityJSON: 'v4',

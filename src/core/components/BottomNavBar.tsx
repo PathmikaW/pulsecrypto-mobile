@@ -11,12 +11,7 @@ import { Icon } from './Icon';
 type Navigation = BottomTabNavigationProp<RootStackParamList>;
 type TabRoute = keyof RootStackParamList;
 
-// Fixed, not content-derived: icon(20) + gap(xs=4) + label lineHeight(11) +
-// paddingVertical(sm=8)*2 = 52. A fixed height (not just matching padding tokens) is what
-// guarantees every tab's box - and therefore the active pill inside it - is pixel-identical
-// regardless of any per-label text-measurement variance (e.g. adjustsFontSizeToFit
-// kicking in differently for "Terminal" vs "Markets"), which is what caused the active
-// pill to render at a visibly different size depending on which tab was selected.
+// Fixed height so every tab's active pill is pixel-identical regardless of per-label text measurement.
 const TAB_HEIGHT = 52;
 
 const TABS: readonly { route: TabRoute; labelKey: string; icon: SvgIconName }[] = [
@@ -26,9 +21,7 @@ const TABS: readonly { route: TabRoute; labelKey: string; icon: SvgIconName }[] 
   { route: 'Settings', labelKey: 'nav.settings', icon: 'navSettings' },
 ];
 
-// Four tabs, present on every screen (specs/mobile-screens.md) - Telemetry and Settings
-// both route to the same TelemetryScreen (ADR-M10). Active-tab color (green) verified
-// directly against the Figma file's own Terminal-tab-active state, not guessed.
+// Telemetry and Settings both route to TelemetryScreen (ADR-M10).
 export function BottomNavBar() {
   const { t } = useTranslation();
   const navigation = useNavigation<Navigation>();
@@ -53,7 +46,6 @@ export function BottomNavBar() {
               accessibilityState={{ selected: isActive }}
             >
               {({ pressed }) => {
-                // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
                 const tintColor = isActive || pressed ? colors.signal.positive : colors.text.numeric;
                 return (
                   <>
@@ -83,20 +75,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.navBar,
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
-    // paddingTop here (mirrored by paddingBottom, added on top of the safe-area inset,
-    // inline above) is what gives every tab - active or not - equal breathing room from
-    // the bar's own top/bottom edges, instead of the pill touching the top divider.
     paddingTop: spacing.xs,
   },
-  // alignItems: 'stretch' (not 'center') + paddingHorizontal here, not on tabContent, is
-  // what gives every tab's pill an equal width regardless of its own label's text length -
-  // tabContent stretches to fill whatever's left of this tab's fixed 1/4 share (inset by
-  // this padding on both sides), so "Markets" (a shorter word) no longer gets a visibly
-  // narrower highlighted area than "Telemetry". height: TAB_HEIGHT (fixed, not
-  // content-derived) + justifyContent: 'center' is what guarantees every tab's box, and
-  // the active pill inside it, is the same size regardless of label-specific text
-  // rendering - centering absorbs any small natural-content-height variance instead of
-  // letting it change the pill's own size.
+  // Stretch + horizontal padding here gives every tab's pill equal width regardless of label length.
   tab: {
     flex: 1,
     height: TAB_HEIGHT,
@@ -112,14 +93,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     overflow: 'hidden',
   },
-  // A translucent tint of colors.signal.positive (same box/glyph relationship as the
-  // Telemetry micro-cards), not the near-black positiveMuted solid - that read as barely
-  // visible against the nav bar's own dark background. Wider horizontal padding (lg, not
-  // md) so the pill reads as a fuller shape around the icon+label, matching Figma.
   tabContentActive: { backgroundColor: `${colors.signal.positive}26` },
-  // textTransform: 'none' overrides labelCaps' default uppercase - Figma's nav labels
-  // ("Terminal", "Markets"...) are title case, not all-caps, unlike most other labelCaps
-  // usages in this app. color: text.numeric (#C6C6CB) - verified value, matching tintColor.
+  // Overrides labelCaps' uppercase: nav labels are title case.
   label: { color: colors.text.numeric, ...typography.labelCaps, textTransform: 'none' },
   labelActive: { color: colors.signal.positive },
 });
