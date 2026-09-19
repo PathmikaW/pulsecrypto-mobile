@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { TopAppBar } from '../../../core/components/TopAppBar';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
@@ -21,6 +21,7 @@ import type { RootStackParamList } from '../../../navigation/types';
 import { useUiStore } from '../../../store/uiStore';
 import { MarketDepthChart } from './MarketDepthChart';
 import { OrderBookView } from './OrderBookView';
+import { TerminalSkeleton } from './TerminalSkeleton';
 
 const LIQUIDITY_GAP_MEDIUM_THRESHOLD = 5;
 const LIQUIDITY_GAP_HIGH_THRESHOLD = 15;
@@ -99,10 +100,18 @@ export function MarketDetailScreen({ route }: Props) {
         : colors.signal.positive;
 
   if (!pair) {
-    // No tracked pairs resolved yet (cold launch, /pairs/meta still loading/failed)
+    // No tracked pairs resolved yet - cold launch with the backend unreachable (no REST
+    // response, no WS tick, and no MMKV cache since nothing has ever synced). Still full
+    // chrome (TopAppBar + BottomNavBar), not a bare spinner with no way to navigate away -
+    // both /pairs/meta and the WS connection retry indefinitely on their own, so this
+    // resolves itself the moment either succeeds.
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.signal.positive} />
+      <View style={styles.container}>
+        <TopAppBar title={t('common:nav.terminal')} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <TerminalSkeleton />
+        </ScrollView>
+        <BottomNavBar />
       </View>
     );
   }
@@ -115,10 +124,7 @@ export function MarketDetailScreen({ route }: Props) {
       asymmetric right-edge gap on the edge-to-edge Market Depth panel. */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {marketData == null ? (
-          <View style={styles.loadingSection}>
-            <ActivityIndicator color={colors.signal.positive} />
-            <Text style={styles.loadingText}>{t('loadingOrderBook')}</Text>
-          </View>
+          <TerminalSkeleton />
         ) : (
           <>
             <View style={styles.priceSection}>
@@ -254,14 +260,6 @@ const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | u
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
   scrollContent: { paddingBottom: spacing.xl },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: colors.background.screenTerminal,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingSection: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxl },
-  loadingText: { color: colors.text.label, ...typography.bodySmall },
   // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
   priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.lg },
   priceLabel: { color: colors.text.primary, ...typography.labelCaps },
@@ -301,12 +299,18 @@ const styles = StyleSheet.create({
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
+  // Flush against the panel's true bottom-right corner (bottom/right: 0, not an inset
+  // offset) - the box's own margin from the edge was repeatedly misread as the whole
+  // panel having a right-side gap, since it sits exactly where that corner gets checked.
+  // Breathing room from the panel edge now comes from its own padding, not a position
+  // offset, and only the top-left corner rounds (the other three coincide with the
+  // panel's own square corners, so rounding them would cut a visible notch there).
   depthLegendBox: {
     position: 'absolute',
-    bottom: spacing.lg,
-    right: spacing.lg,
-    backgroundColor: 'rgba(11,20,32,0.75)',
-    borderRadius: radius.card,
+    bottom: 0,
+    right: 0,
+    backgroundColor: 'rgba(11,20,32,0.85)',
+    borderTopLeftRadius: radius.card,
     padding: spacing.md,
   },
   depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
