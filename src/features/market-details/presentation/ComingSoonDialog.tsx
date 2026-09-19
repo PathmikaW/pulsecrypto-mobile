@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
 // A pure opacity-only fade (no scale) was tried and reverted - a dialog card that just
 // flatly appears with no motion at all reads as visually "off"/glitchy, worse than the
-// small delay it was meant to fix. Restored the fade+scale look, kept fast at 120ms (down
-// from the original 150ms) - short enough not to read as delay, long enough for the scale
-// to still register as an intentional motion rather than a jump cut.
+// small delay it was meant to fix. Fade duration stays fast (120ms, down from the original
+// 150ms) so opening doesn't read as delayed.
 const ANIMATION_DURATION_MS = 120;
+// The open scale uses a spring, not withTiming - a linear/eased timing curve reads as
+// mechanical for a "pop in" motion. dampingRatio just under 1 (slightly underdamped) gives
+// a natural, smooth settle with a touch of give at the end instead of a hard stop, without
+// enough overshoot to look bouncy/playful for what's still a plain dialog.
+const OPEN_SCALE_SPRING = { duration: 260, dampingRatio: 0.85 };
 
 interface ComingSoonDialogProps {
   visible: boolean;
@@ -38,7 +48,7 @@ export function ComingSoonDialog({ visible, title, body, confirmLabel, onDismiss
   useEffect(() => {
     if (visible) {
       opacity.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
-      scale.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
+      scale.value = withSpring(1, OPEN_SCALE_SPRING);
     } else if (isMounted) {
       opacity.value = withTiming(0, { duration: ANIMATION_DURATION_MS }, (finished) => {
         if (finished) runOnJS(setIsMounted)(false);
