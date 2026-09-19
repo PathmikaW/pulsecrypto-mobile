@@ -288,10 +288,14 @@ const styles = StyleSheet.create({
   // both screen edges. A radius on a truly edge-to-edge card reveals a sliver of the
   // screen's own background color at the top/bottom-right corners where the curve pulls
   // away from the device edge - that sliver was the reported "right side gap."
+  // borderTop is this panel's own top edge, not a separate divider View floating above it
+  // with a gap (same lesson as the order book header's hairline).
   depthPanel: {
     backgroundColor: colors.background.card,
     minHeight: 220,
     overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   depthTopLeft: { position: 'absolute', top: spacing.lg, left: spacing.lg, gap: spacing.sm },
   depthTitle: { color: colors.text.primary, ...typography.labelCaps },
@@ -303,17 +307,23 @@ const styles = StyleSheet.create({
   // both edges) after a high-res reference confirmed this was correct all along - the
   // "flush corner" change in the prior round was wrong; the reported right-side gap was
   // never this box, and remains unresolved as a separate issue on the panel itself.
-  // Solid card background + a subtle border, not a dark translucent overlay - was too
-  // close to black to read as a distinct card against the wave behind it.
+  // Fully solid card background (no alpha at all) with a visible light border and a bit of
+  // elevation, so it reads as a distinct, solid card lifted off the wave behind it rather
+  // than blending into it - a dark translucent overlay wasn't opaque/distinct enough.
   depthLegendBox: {
     position: 'absolute',
     bottom: spacing.lg,
     right: spacing.lg,
     backgroundColor: colors.background.card,
     borderWidth: 1,
-    borderColor: colors.background.divider,
+    borderColor: 'rgba(255,255,255,0.15)',
     borderRadius: radius.card,
     padding: spacing.lg,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   depthStatDivider: { width: 1, height: 32, backgroundColor: colors.background.divider },
