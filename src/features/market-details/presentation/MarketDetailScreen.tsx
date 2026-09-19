@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { BlurView } from 'expo-blur';
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -206,8 +207,13 @@ export function MarketDetailScreen({ route }: Props) {
               </View>
 
               {/* Bottom-right floating box, not full width - matches Figma exactly (was:
-              a full-width box in normal flow below the header). */}
+              a full-width box in normal flow below the header). Real background blur
+              (Figma: 12), not just a translucent fill - BlurView provides the blur, a
+              tinted overlay on top of it provides the exact color, since BlurView's own
+              `tint` only accepts light/dark/default, not an arbitrary hex. */}
               <View style={styles.depthLegendBox}>
+                <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={[StyleSheet.absoluteFill, styles.depthLegendTint]} />
                 <View style={styles.depthStatRow}>
                   <StatCell
                     label={t('liquidityGap')}
@@ -337,19 +343,20 @@ const styles = StyleSheet.create({
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
   // Reverted back to a genuinely floating inset card (all 4 corners rounded, margin from
   // both edges) after a high-res reference confirmed this was correct all along - the
-  // "flush corner" change in the prior round was wrong; the reported right-side gap was
+  // "flush corner" change in a prior round was wrong; the reported right-side gap was
   // never this box, and remains unresolved as a separate issue on the panel itself.
-  // Fully solid card background (no alpha at all) with a visible light border and a bit of
-  // elevation, so it reads as a distinct, solid card lifted off the wave behind it rather
-  // than blending into it - a dark translucent overlay wasn't opaque/distinct enough.
+  // overflow:'hidden' clips the BlurView/tint layers to the rounded corners; padding here
+  // (not on a separate content wrapper) still correctly insets depthStatRow, since RN's
+  // padding only affects normally-flowing children - the two absolute-fill layers below
+  // ignore it and cover the box edge-to-edge, which is what a background blur needs.
   depthLegendBox: {
     position: 'absolute',
     bottom: spacing.lg,
     right: spacing.lg,
-    backgroundColor: colors.background.depthLegend,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: colors.border.depthLegend,
     borderRadius: radius.card,
+    overflow: 'hidden',
     padding: spacing.lg,
     elevation: 4,
     shadowColor: '#000',
@@ -357,6 +364,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
   },
+  // ~80% opacity tint over the BlurView - verified color (was mistakenly the border color
+  // in an earlier round).
+  depthLegendTint: { backgroundColor: `${colors.background.divider}CC` },
   depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   depthStatDivider: { width: 1, height: 32, backgroundColor: colors.background.divider },
 });
