@@ -178,8 +178,10 @@ and `ios/` are generated, not committed.
 - **TanStack Query**: REST data (`/pairs/meta`) — caching, refetch, loading/error states.
 - Do not fetch REST data with ad hoc `fetch` + Zustand state — that's the exact pattern
   TanStack Query was adopted to avoid as the REST surface grows.
-- **All REST calls go through the axios `HttpClient` (`core/api/httpClient.ts`, ADR-M12)** —
-  never call `fetch`/axios directly from a feature. Failures leave that module as an
+- **All REST calls go through the axios `apiClient` (`core/api/apiClient.ts`, ADR-M12)**, used
+  only by data sources under `core/data/`. ESLint forbids importing `axios` outside
+  `src/core/api/` and `apiClient` outside `src/core/data/` — never call `fetch`/axios from a
+  feature, component or hook. Failures leave that module as an
   `AppError` (`core/api/errors.ts`); retry is decided in one place (`core/api/retry.ts`, wired
   into `queryClient.ts`) and only for `retryable` errors. Do not add a second retry layer
   (e.g. axios-retry) on top — it multiplies attempts. Show failures via `AppError.i18nKey`.
