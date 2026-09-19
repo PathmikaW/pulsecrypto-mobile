@@ -30,7 +30,19 @@ describe('retryDelayMs', () => {
 
 describe('the app QueryClient retry wiring', () => {
   const defaults = queryClient.getDefaultOptions().queries!;
-  const fastClient = () => new QueryClient({ defaultOptions: { queries: { ...defaults, retryDelay: 1 } } });
+  const clients: QueryClient[] = [];
+  // gcTime 0 and clear() so the cache's 5-minute garbage-collection timers can't keep Jest alive.
+  const fastClient = () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { ...defaults, retryDelay: 1, gcTime: 0 } },
+    });
+    clients.push(client);
+    return client;
+  };
+
+  afterEach(() => {
+    clients.splice(0).forEach((client) => client.clear());
+  });
 
   it('uses the shared policy', () => {
     expect(defaults.retry).toBe(shouldRetry);
