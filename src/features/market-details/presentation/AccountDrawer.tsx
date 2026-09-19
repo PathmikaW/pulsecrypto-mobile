@@ -34,6 +34,15 @@ export function AccountDrawer() {
   const backdropOpacity = useSharedValue(0);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Render-phase state update (React's documented "adjust state during render" pattern,
+  // not a lint violation like a setState-in-effect would be) - mounts the Modal in the
+  // SAME commit as the isOpen flip, instead of an extra render -> effect -> render
+  // round-trip. That two-hop mount gate, not the reanimated animation itself (already
+  // UI-thread), was the actual cause of the open feeling delayed by "a few ms".
+  if (isOpen && !isMounted) {
+    setIsMounted(true);
+  }
+
   useEffect(() => {
     // Deliberately keyed on `isOpen` alone: this synchronizes the animation with an
     // external system (the UI thread, via reanimated shared values), which is exactly
@@ -41,8 +50,6 @@ export function AccountDrawer() {
     // the close animation's own completion callback fires) is the standard pattern for a
     // slide-out-before-unmount drawer, not an accidental cascading render.
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above.
-      setIsMounted(true);
       translateX.value = withTiming(0, { duration: ANIMATION_DURATION_MS });
       backdropOpacity.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
     } else if (isMounted) {
