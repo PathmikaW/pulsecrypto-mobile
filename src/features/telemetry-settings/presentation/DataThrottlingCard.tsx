@@ -1,8 +1,8 @@
-import Slider from '@react-native-community/slider';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../../../core/components/Icon';
+import { Slider } from '../../../core/components/Slider';
 import { Toggle } from '../../../core/components/Toggle';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
@@ -37,18 +37,12 @@ export function DataThrottlingCard() {
           <Text style={styles.value}>{`${frequencyMs}ms`}</Text>
         </View>
         <Slider
-          style={styles.slider}
           minimumValue={MIN_FREQUENCY_MS}
           maximumValue={MAX_FREQUENCY_MS}
           step={10}
           value={frequencyMs}
           onValueChange={setFrequencyMs}
-          // Figma's track is a uniform gray bar with no "filled" portion - only the thumb
-          // is colored. minimumTrackTintColor matches maximumTrackTintColor instead of
-          // the signal green (was: a green fill from the left edge to the thumb).
-          minimumTrackTintColor={colors.background.divider}
-          maximumTrackTintColor={colors.background.divider}
-          thumbTintColor={colors.signal.positive}
+          accessibilityLabel={t('telemetry.updateFrequency')}
         />
         <View style={styles.sliderBounds}>
           <Text style={styles.boundLabel}>{`${MIN_FREQUENCY_MS}ms`}</Text>
@@ -65,7 +59,10 @@ export function DataThrottlingCard() {
           accessibilityLabel={t('telemetry.binaryProtocolCompression')}
         />
       </View>
-      <View style={styles.toggleRow}>
+      {/* No borderTop between the two toggle rows - Figma only shows the one separating
+      the toggle group from the slider section above, not one between the toggles
+      themselves. */}
+      <View style={[styles.toggleRow, styles.toggleRowNoDivider]}>
         <Text style={styles.toggleLabel}>{t('telemetry.adaptivePollingStrategy')}</Text>
         <Toggle
           value={adaptivePolling}
@@ -78,25 +75,31 @@ export function DataThrottlingCard() {
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.background.card, borderRadius: radius.card, padding: spacing.lg },
+  // Verified value: #1E2633 at 0x66 alpha (~40% opacity), not the fully solid card color -
+  // same treatment as MicroCard's card background.
+  card: { backgroundColor: `${colors.background.card}66`, borderRadius: radius.card, padding: spacing.xl },
   headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   eyebrow: { color: colors.signal.positive, ...typography.labelCaps },
   heading: { color: colors.text.primary, ...typography.heading, marginTop: spacing.xs },
-  sliderSection: { marginTop: spacing.lg },
-  slider: { width: '100%', height: 32 },
-  sliderHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  label: { color: colors.text.label, ...typography.bodySmall },
+  sliderSection: { marginTop: spacing.xxl },
+  sliderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.md },
+  // text.numeric (#C6C6CB) - verified value, not text.label as tried earlier.
+  label: { color: colors.text.numeric, ...typography.bodySmall },
   value: { color: colors.signal.positive, ...typography.tableValueLarge },
-  sliderBounds: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -spacing.xs },
-  boundLabel: { color: colors.text.label, ...typography.tableValueSmall },
+  sliderBounds: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
+  boundLabel: { color: colors.text.numeric, ...typography.tableValueSmall },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
-    paddingTop: spacing.md,
-    marginTop: spacing.md,
+    paddingTop: spacing.xl,
+    marginTop: spacing.xl,
   },
+  // Smaller paddingTop/marginTop than toggleRow's - without a divider line to separate
+  // them, the two rows only need normal item spacing, not the larger gap that used to
+  // give the border line room to breathe.
+  toggleRowNoDivider: { borderTopWidth: 0, paddingTop: 0, marginTop: spacing.md },
   toggleLabel: { color: colors.text.primary, ...typography.body, flex: 1 },
 });
