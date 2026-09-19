@@ -6,11 +6,11 @@
 
 **Options considered:**
 
-| Option                                 | Pros                                            | Cons                                                                                                                                             |
-| -------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Expo (Managed / Expo Go)               | Fastest possible setup                          | No custom native modules — ruled out immediately, since Reanimated, MMKV, and the live WebSocket client all require native code                 |
-| **Expo (Dev Client / Prebuild)** | Full native access, strong developer experience | Tied to Expo's release cadence (mitigated — frequent releases, no forced cloud dependency)                                                      |
-| Bare React Native CLI                  | Full native control                             | Equivalent native capability to Dev Client today, at the cost of hand-maintaining native project files across every React Native version upgrade |
+| Option                           | Pros                                            | Cons                                                                                                                                             |
+| -------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Expo (Managed / Expo Go)         | Fastest possible setup                          | No custom native modules — ruled out immediately, since Reanimated, MMKV, and the live WebSocket client all require native code                  |
+| **Expo (Dev Client / Prebuild)** | Full native access, strong developer experience | Tied to Expo's release cadence (mitigated — frequent releases, no forced cloud dependency)                                                       |
+| Bare React Native CLI            | Full native control                             | Equivalent native capability to Dev Client today, at the cost of hand-maintaining native project files across every React Native version upgrade |
 
 **Decision.** Expo, using Dev Client and Continuous Native Generation (`npx expo prebuild`) — not Expo Go, and not bare CLI. See §5 for the specific SDK version and a note on an SDK 56 regression that directly affects this project's animation library.
 
@@ -22,21 +22,25 @@
    - These can be opened in Xcode or Android Studio and edited directly, exactly as a bare CLI project's native folders would be.
    - The Expo Modules API provides a clean interface for writing custom native modules when required.
    - This matches the role's description of production-grade mobile work occasionally requiring direct native-project work when required — the native projects exist and are fully editable; they're simply not hand-carried across every framework upgrade by default.
+
 2. **Capability for a Platform With Future Native Needs:**
 
-   - Config plugins exist for common categories of native SDK a wagering platform would plausibly integrate over time — geolocation/geofencing compliance, KYC, biometrics — and where a config plugin doesn't yet exist for a specific SDK, the underlying native code still installs the same way it would in a bare project, since a Dev Client build *is* a real native project.
+   - Config plugins exist for common categories of native SDK a wagering platform would plausibly integrate over time — geolocation/geofencing compliance, KYC, biometrics — and where a config plugin doesn't yet exist for a specific SDK, the underlying native code still installs the same way it would in a bare project, since a Dev Client build _is_ a real native project.
    - Full control over code signing and provisioning profiles remains with the developer, not with Expo.
    - EAS Build is entirely optional: `npx expo prebuild` followed by `npx expo run:android` / `npx expo run:ios` compiles with a local Gradle/Xcode toolchain, with no Expo account or cloud dependency required at any point.
+
 3. **Lower Long-Run Maintenance Cost:**
 
    - Continuous Native Generation regenerates native projects from declarative configuration rather than requiring native project files (Podfile, Gradle, AppDelegate, MainApplication) to be hand-maintained through every React Native version bump.
    - This is a real, recurring engineering cost under the bare CLI model — one that scales with the number of native dependencies a project accumulates over time — and Dev Client avoids it by construction.
+
 4. **Industry Direction, Both Sides Considered:**
 
    - React Native's own documentation recommends Expo as the default starting point for new projects.
    - Coinbase's Mobile DevX team has publicly stated its engineers work with React Native and Expo in production — a directly relevant precedent from a fintech/crypto company.
    - New Architecture (Fabric/TurboModules) is fully supported.
    - **Counter-evidence, stated plainly rather than omitted:** the picture isn't one-sided. Shopify announced in 2026 that it is moving its major applications away from React Native entirely, back to native Swift/Kotlin, citing AI-assisted native development narrowing cross-platform's traditional cost advantage — and as part of that move, Shopify is winding down its sponsorship of React Native open-source projects it built, including FlashList (see ADR-M3). That doesn't change the calculus for a small, from-scratch real-time viewer like PulseCrypto, where the native-integration surface is minimal and the iteration-speed benefit is real — but an honest technical comparison includes both data points, not only the one that supports the choice made.
+
 5. **Fit for the Assignment as Specified:**
 
    - Faster iteration without sacrificing native capability.
@@ -64,8 +68,8 @@
 
 | Data                            | Source        | Tool                         | Why                                                                                |
 | ------------------------------- | ------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| Market data (price, order book) | WebSocket     | **Zustand**            | High-frequency updates (100ms cadence), selector-based re-renders, direct mutation |
-| Metadata (pair info, 24h stats) | REST          | **TanStack Query**     | Built-in caching, background refetch, loading/error states, request deduplication  |
+| Market data (price, order book) | WebSocket     | **Zustand**                  | High-frequency updates (100ms cadence), selector-based re-renders, direct mutation |
+| Metadata (pair info, 24h stats) | REST          | **TanStack Query**           | Built-in caching, background refetch, loading/error states, request deduplication  |
 | Favourites                      | Local storage | Zustand (persist middleware) | Simple, persisted key-value state                                                  |
 | Connection status               | WebSocket     | Zustand                      | Simple UI-facing enum                                                              |
 | Search query                    | UI            | Zustand / local state        | UI filter state                                                                    |
@@ -87,11 +91,11 @@
 
 **Options considered:**
 
-| Option              | Pros                                                          | Cons                                                                   |
-| ------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| FlatList            | Built-in, familiar                                            | Recreates cells on frequent updates — a real cost at this update rate |
-| **FlashList** | Recycles list cells instead of destroying and recreating them | Extra dependency; maintenance-continuity note below                    |
-| SectionList         | Grouped sections                                              | Unnecessary structure for a flat watchlist                             |
+| Option        | Pros                                                          | Cons                                                                  |
+| ------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
+| FlatList      | Built-in, familiar                                            | Recreates cells on frequent updates — a real cost at this update rate |
+| **FlashList** | Recycles list cells instead of destroying and recreating them | Extra dependency; maintenance-continuity note below                   |
+| SectionList   | Grouped sections                                              | Unnecessary structure for a flat watchlist                            |
 
 **Decision.** FlashList (v2 line, built for React Native's New Architecture — see §5 for the specific version), which the project is already on via Expo.
 
@@ -113,11 +117,11 @@
 
 **Options considered:**
 
-| Option                            | Pros                                                                  | Cons                                             |
-| --------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------ |
-| Animated API (built-in)           | No extra dependency                                                   | Runs on the JS thread — can stutter under load  |
+| Option                      | Pros                                                                  | Cons                                             |
+| --------------------------- | --------------------------------------------------------------------- | ------------------------------------------------ |
+| Animated API (built-in)     | No extra dependency                                                   | Runs on the JS thread — can stutter under load   |
 | **react-native-reanimated** | Runs on the UI thread, 60fps achievable independent of JS thread load | Extra native dependency                          |
-| Lottie                            | Suited to complex, designed animations                                | Overkill for a color flash or a bar-width change |
+| Lottie                      | Suited to complex, designed animations                                | Overkill for a color flash or a bar-width change |
 
 **Decision.** `react-native-reanimated` (current major — see §5, including a specific version-pinning note relevant to this exact library).
 
@@ -129,6 +133,23 @@
 
 **Trade-offs accepted.** An additional native dependency, handled transparently by the Expo Dev Client setup (ADR-M1); a somewhat more involved animation API than the built-in `Animated`, in exchange for guaranteed UI-thread execution. See §5 for a known Expo SDK 56 regression affecting this exact library, and why that makes the specific SDK version choice non-cosmetic.
 
+**Closing a JS-thread leak in an already-worklet-driven animation (v9.0).** Real-device
+testing under live WS traffic (see ADR-M11) found `PriceText` — the price-flash component,
+the single most frequently updated piece of UI in the app — still routed its flash
+direction (up/down, which decides the flash's color) through a plain `useState`, even
+though the flash's opacity animation itself was already a reanimated worklet. The
+`setState` call meant every single price tick (every visible watchlist row, plus the
+Terminal screen's own price, at the backend's 100ms broadcast cadence) forced a JS-thread
+re-render purely to recolor a UI-thread-animated overlay — the exact class of regression
+ADR-M4 exists to prevent, reintroduced through one small oversight rather than a rejection
+of the pattern. Fixed by moving the direction into a second `useSharedValue`, read directly
+inside the same `useAnimatedStyle` worklet that already reads the opacity value; the effect
+that used to call `setDirection` now only mutates shared values, triggering zero React
+re-renders. The lesson generalizes: reanimated only delivers ADR-M4's guarantee for the
+_entire_ data path from a value change to a painted pixel — a single `useState` anywhere in
+that path reintroduces JS-thread coupling regardless of how the rest of the path is built,
+and is easy to miss in review since the component still visibly "looks" UI-thread-animated.
+
 ---
 
 ### ADR-M5: Local Persistence — MMKV
@@ -137,11 +158,11 @@
 
 **Options considered:**
 
-| Option         | Pros                            | Cons                                                       |
-| -------------- | ------------------------------- | ---------------------------------------------------------- |
-| AsyncStorage   | Simple, built-in                | Asynchronous only, slower, string-based                    |
-| **MMKV** | Synchronous, ~30x faster, typed | Native module (already available via the Dev Client setup) |
-| SQLite         | Relational, powerful            | Overkill for simple key-value data                         |
+| Option       | Pros                            | Cons                                                       |
+| ------------ | ------------------------------- | ---------------------------------------------------------- |
+| AsyncStorage | Simple, built-in                | Asynchronous only, slower, string-based                    |
+| **MMKV**     | Synchronous, ~30x faster, typed | Native module (already available via the Dev Client setup) |
+| SQLite       | Relational, powerful            | Overkill for simple key-value data                         |
 
 **Decision.** MMKV, integrated via Zustand's `persist` middleware.
 
@@ -195,16 +216,16 @@ export const useMarketStore = create<MarketState>()(
 | ---------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | Native WebSocket API alone         | No dependency                                             | No reconnection, no backoff, no app-state awareness                                                |
 | A third-party reconnection library | Some behavior provided out of the box                     | Generally browser-focused, limited configurability for RN-specific concerns like app backgrounding |
-| **Custom hook**              | Full control, tailored to React Native's runtime behavior | More code to write and maintain                                                                    |
+| **Custom hook**                    | Full control, tailored to React Native's runtime behavior | More code to write and maintain                                                                    |
 
 **Decision.** A custom `useWebSocket` hook.
 
 **Options considered — connection liveness detection specifically:**
 
-| Option                                 | Description                                                                                                          | Verdict                                                                                                                                                                                                                                                                                                                                                                                                  |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Option                                 | Description                                                                                                          | Verdict                                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dedicated ping/pong heartbeat protocol | Client and server exchange keepalive messages on a timer, independent of data traffic                                | **Rejected.** This backend broadcasts on a fixed cadence (`BROADCAST_INTERVAL_MS`, 100ms) whenever it's healthy, which is already a liveness signal — a connection that's actually alive is, by definition, delivering broadcasts. A separate heartbeat protocol would answer a question the data stream already answers, at the cost of an extra message type and server-side handling for it. |
-| **Broadcast-silence timeout**    | Track time since the last message of any kind was received; treat the connection as dead if that exceeds a threshold | **Selected** — no new protocol surface, no server-side changes, and the threshold is defined as a multiple of the backend's own known broadcast interval rather than an arbitrary separate number                                                                                                                                                                                                 |
+| **Broadcast-silence timeout**          | Track time since the last message of any kind was received; treat the connection as dead if that exceeds a threshold | **Selected** — no new protocol surface, no server-side changes, and the threshold is defined as a multiple of the backend's own known broadcast interval rather than an arbitrary separate number                                                                                                                                                                                               |
 
 **Features.**
 
@@ -246,6 +267,18 @@ to close and are added here rather than left as an implicit assumption:
   class component implementing `componentDidCatch` is standard React and sufficient here;
   a library like `react-error-boundary` is optional convenience, not a functional
   requirement.
+
+**Fail fast on a plaintext transport in production (v9.0).** A security review (prompted by
+the developer explicitly calling out security as a priority alongside performance) found
+that nothing stopped a production build from silently shipping the same plaintext
+`http://`/`ws://` defaults used for local development (`EXPO_PUBLIC_API_BASE_URL`,
+`EXPO_PUBLIC_WS_BASE_URL` — plaintext is correct and expected there, e.g. the Android
+Emulator's `10.0.2.2` loopback) if an env var were ever left unset or misconfigured for a
+real release build. `src/core/api/config.ts` now throws at module load, outside `__DEV__`
+only, if either URL doesn't use `https://`/`wss://` — a deliberately loud, unrecoverable
+failure rather than a warning, since a silently-plaintext production build carrying live
+market data traffic is a worse outcome than a build that refuses to start. Costs nothing in
+development, where `__DEV__` is always true.
 
 ---
 
@@ -296,10 +329,10 @@ useEffect(() => {
 
 **Options considered:**
 
-| Option                                                                        | Pros                                                                                                                                                                 | Cons                                                                                                                                                         |
-| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Layer-first (`src/domain`, `src/data`, `src/presentation`)              | Architectural boundaries visible at a glance for a very small app                                                                                                    | Poor scalability — adding one feature requires touching three or more disparate top-level folders; higher merge-conflict risk as the codebase and team grow |
-| Feature-first, flat (`src/features/Watchlist.tsx`)                          | Good navigability, changes stay localized                                                                                                                            | Tends toward "God files" mixing domain logic, data access, and UI in one place without internal structure                                                    |
+| Option                                                                | Pros                                                                                                                                                               | Cons                                                                                                                                                        |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layer-first (`src/domain`, `src/data`, `src/presentation`)            | Architectural boundaries visible at a glance for a very small app                                                                                                  | Poor scalability — adding one feature requires touching three or more disparate top-level folders; higher merge-conflict risk as the codebase and team grow |
+| Feature-first, flat (`src/features/Watchlist.tsx`)                    | Good navigability, changes stay localized                                                                                                                          | Tends toward "God files" mixing domain logic, data access, and UI in one place without internal structure                                                   |
 | **Feature-first with internal layering, plus a shared `core/` layer** | Localized feature development*and* enforced Clean Architecture boundaries within each feature; a small, deliberate shared layer for what's genuinely cross-feature | Slightly deeper nesting — mitigated by standard IDE path tooling                                                                                            |
 
 **Decision.** Feature-first architecture with internal layering per feature, plus a small, explicitly-scoped `core/` layer for models, ports, and components genuinely needed by more than one feature.
@@ -447,12 +480,12 @@ export interface IFavouritesRepository {
 
 **Options considered:**
 
-| Option                                                                                | Pros                                                                                                                                                                                                                                      | Cons                                                                                                                              |
-| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Hardcoded English strings, localize later if ever needed                              | Zero setup cost right now                                                                                                                                                                                                                 | Every user-facing string becomes a future retrofit; historically expensive technical debt, not a neutral deferral                 |
+| Option                                                                          | Pros                                                                                                                                                                                                                                    | Cons                                                                                                                              |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Hardcoded English strings, localize later if ever needed                        | Zero setup cost right now                                                                                                                                                                                                               | Every user-facing string becomes a future retrofit; historically expensive technical debt, not a neutral deferral                 |
 | **i18next + react-i18next, with expo-localization for device locale detection** | Industry-standard for React/React Native, mature ecosystem, supports interpolation/pluralization/namespaced lazy loading;`expo-localization` is maintained by the Expo team itself and stays version-aligned with the SDK automatically | Extra dependency, one-time setup cost                                                                                             |
-| lingui (macro-based)                                                                  | More type-safe string extraction, compile-time key checking                                                                                                                                                                               | Heavier build-tooling setup (babel/SWC macros) for a project this size; steeper learning curve without a corresponding payoff yet |
-| Meta's FBT                                                                            | Battle-tested internally at Meta                                                                                                                                                                                                          | Thin React Native ecosystem support and documentation relative to i18next outside Meta's own infrastructure — a poor fit here    |
+| lingui (macro-based)                                                            | More type-safe string extraction, compile-time key checking                                                                                                                                                                             | Heavier build-tooling setup (babel/SWC macros) for a project this size; steeper learning curve without a corresponding payoff yet |
+| Meta's FBT                                                                      | Battle-tested internally at Meta                                                                                                                                                                                                        | Thin React Native ecosystem support and documentation relative to i18next outside Meta's own infrastructure — a poor fit here     |
 
 **Decision.** `i18next` + `react-i18next` for translation strings and formatting logic; `expo-localization` for device-locale detection. Structure and wire the pattern fully now; ship with a complete English (`en`) translation as the only shipped locale, proving the mechanism end-to-end without committing to translating and maintaining additional languages for this exercise.
 
@@ -504,7 +537,7 @@ Both screens share a bottom nav bar with **four tabs — Terminal, Markets, Tele
 Settings** — but only two of the four have a designed screen behind them. There is no
 `Markets` screen: the assignment's actual required watchlist (five-pair list, search,
 favourite toggle) isn't mocked anywhere in the file. Conversely, a large fraction of what
-*is* mocked — the account drawer, the entire telemetry/settings dashboard — sits outside
+_is_ mocked — the account drawer, the entire telemetry/settings dashboard — sits outside
 the assignment's Part 2 functional requirements entirely.
 
 **Decision.** Presented to the developer as an explicit choice (not resolved unilaterally),
@@ -531,7 +564,7 @@ specifies.** Concretely:
     Keys/Security/Trade History/Sign Out in the account drawer) are implemented as local UI
     state only — visually functional, not wired to anything real. This is stated plainly in
     the README as intentional, not left for a reviewer to discover.
-  - Metrics that *are* genuinely obtainable client-side — the WS message-ingestion rate
+  - Metrics that _are_ genuinely obtainable client-side — the WS message-ingestion rate
     (trivial: `useWebSocket` already receives every message) and JS-thread FPS (obtainable
     via a frame-time sampler or Reanimated's frame callback, which is already a dependency —
     ADR-M4) — are wired to real values rather than faked, since the honest version costs
@@ -583,5 +616,107 @@ inconsistent with the Figma-sourced screens if the token system isn't followed c
 mitigated by `design-tokens.md` being the single source every screen (mocked or not) draws
 from.
 
+**Placeholder interactions use a themed in-app dialog, not the native `Alert` (v9.0).** The
+account drawer's no-backend links (API Keys, Security, Trade History, Support) originally
+surfaced their "not implemented" message via React Native's built-in `Alert.alert()`. On
+real-device review this was flagged as visibly wrong: `Alert.alert()` renders a genuine
+native OS dialog, always in the platform's own light theme, which broke the dark, custom-
+themed presentation the rest of this document has verified against Figma. Replaced with
+`ComingSoonDialog` (`src/features/market-details/presentation/`), a plain
+reanimated-driven overlay matching the app's own theme, using the same render-phase mount
+pattern adopted for the account drawer itself (see ADR-M11) so it opens with no perceptible
+delay. Scoped to `market-details/presentation/`, not `core/`, per ADR-M8's two-or-more-
+features test — only the account drawer uses it today. Generalizes as a rule: any future
+placeholder/confirmation interaction in this app should reach for a themed in-app dialog
+like this one, not `Alert.alert`, to stay visually consistent with the verified design
+system rather than falling back to whatever the OS provides by default.
+
 ---
 
+### ADR-M11: Tab Navigation Architecture — Bottom Tabs, Paired With Focus-Gated Live Data (v9.0)
+
+**Context.** The four bottom-nav destinations (Terminal, Markets, Telemetry, Settings) were
+originally built on `createNativeStackNavigator` (§5's tech-stack table listed "React
+Navigation (Native Stack)" as a plain version pin, not a reasoned decision — this ADR is
+that decision made explicit, after the fact, once real-device testing showed it was wrong).
+`BottomNavBar`'s own tab-press handler called `navigation.navigate(route)`
+per tab, with `screenOptions: { animation: 'none' }` intended to make switching feel
+instant.
+
+**Problem found (real-device testing, not a design-time concern).** The developer reported
+switching tabs felt "laggy," with "flickering" and dropped frames — on a physical device,
+not the simulator. Root cause: a Stack navigator's `navigate()` to a route not currently on
+top of the stack pushes a **new screen instance**, which fully remounts that screen — every
+hook re-runs, the WS-backed `marketStore` subscription re-establishes, layout recomputes
+from scratch — regardless of `animation: 'none'`, which only suppresses the slide
+_transition_, not the remount cost underneath it. Every single tab switch paid this cost,
+every time, in both directions.
+
+**Options considered:**
+
+| Option                                                        | Pros                                                                                                                                          | Cons                                                                                                                           |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Native Stack + `animation: 'none'` (original)                 | Matches the original scaffold choice; no new dependency                                                                                       | Still remounts every switch — the actual lag was never in the transition animation, so suppressing it fixed nothing            |
+| **`@react-navigation/bottom-tabs`**                           | Keeps a visited screen mounted after first visit — a later switch is a pure visibility toggle, no remount, no re-subscribe, no dropped frames | Requires every screen with a live subscription to become focus-aware, or an invisible screen keeps doing real work (see below) |
+| Hand-rolled tab state (conditional rendering, no nav library) | Full control                                                                                                                                  | Reinvents back-button handling, deep-linking, and navigation state restoration that React Navigation already provides for free |
+
+**Decision.** `@react-navigation/bottom-tabs` (`createBottomTabNavigator`). The existing
+`BottomNavBar` component is hoisted to the Navigator's own `tabBar` render prop
+(`<Tab.Navigator tabBar={() => <BottomNavBar />}>`) so it renders once at the Navigator
+level instead of being duplicated inside every screen — `BottomNavBar` itself needed no
+internal changes, since it already read navigation state via the generic
+`useNavigation()`/`useNavigationState()` hooks rather than the tab-bar render-prop's own
+`state`/`descriptors` arguments.
+
+**A second problem, found immediately after fixing the first — not a separate incident, the
+other half of the same decision.** Bottom Tabs' mount-and-keep behavior is exactly what
+fixes the remount lag, but it has a direct consequence the initial fix didn't account for:
+**every visited screen stays mounted and subscribed even while a different tab is
+focused.** Terminal's `useMarketData` subscription (and Watchlist's per-row equivalent in
+`PairRow`) kept firing on every ~100ms WS broadcast tick and re-rendering their full
+component trees — Terminal's re-render alone includes `OrderBookView`'s 20 rows and a real
+`BlurView` native blur redraw — regardless of whether that screen was the one actually on
+screen. This was confirmed, not assumed: reproduced live by watching the Telemetry screen's
+own JS-thread FPS gauge (ADR-M10) crater to 15–19 FPS while Terminal sat invisible in the
+background, mounted, still fully re-rendering. Left unaddressed, this trade Native Stack's
+remount cost for a worse, continuous cost — paid on every tab, all the time, rather than
+once per switch.
+
+**Mitigation, same decision, not a follow-up ADR.** `useMarketData`
+(`src/core/hooks/useMarketData.ts`) — the shared `useSyncExternalStore`-based hook both
+`MarketDetailScreen` and `WatchlistScreen`'s `PairRow` use to subscribe to a given pair's
+live data — takes an `enabled` option (default `true`). When `false`, the `subscribe`
+callback passed to `useSyncExternalStore` is a no-op: it never registers with the store, so
+the store's change notifications never reach it and no re-render is ever triggered, while
+`getSnapshot` keeps reading live state directly (not a cached/frozen value), so the screen
+reflects fully current data the instant it's re-enabled — no separate resync logic needed.
+Both `MarketDetailScreen` and `PairRow` gate this on React Navigation's own
+`useIsFocused()`, so a screen's live subscription is only ever active while a user can
+actually see it.
+
+**Rationale.**
+
+1. **Fixes the reported, reproduced defect** (Stack-navigator remount lag) without
+   discarding React Navigation's built-in back-button/deep-linking/state-restoration
+   handling for a hand-rolled alternative.
+2. **The two halves are one decision, not two.** Adopting Bottom Tabs alone would have
+   traded a per-switch remount cost for a worse, continuous background-rendering cost —
+   arguably harder to notice in casual testing (it doesn't visibly stutter the _active_
+   screen, it silently taxes the _whole app's_ frame budget from off-screen). Recording
+   only the navigator swap without the focus-gating fix would misstate what actually made
+   the app fast, and would leave the same regression waiting to be reintroduced by any
+   future screen that subscribes to WS-driven data without copying this pattern.
+3. **`useSyncExternalStore`'s subscribe/getSnapshot split made the fix cheap and
+   non-invasive** — the `enabled` flag only changes which `subscribe` function is used, not
+   the read path, so there's no separate "resume" logic to keep in sync with the "pause"
+   logic.
+
+**Trade-offs accepted.** All four screens' component trees stay resident in memory once
+visited, rather than being torn down on tab switch — acceptable at this app's scale (four
+to five screens, no large per-screen state) and clearly the smaller cost next to the
+remount lag it replaces. **Standing obligation, stated explicitly so it isn't rediscovered
+the hard way again:** any future screen added to this navigator that subscribes to
+WS-driven or otherwise continuously-updating data must gate that subscription on
+`useIsFocused()` the same way, or it will silently reintroduce this exact class of bug.
+
+---
