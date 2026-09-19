@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View, type TextStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -25,7 +25,12 @@ export function PriceText({ value, style, changePercent }: PriceTextProps) {
   const { i18n } = useTranslation();
   const previousValue = useRef(value);
   const flashOpacity = useSharedValue(0);
-  const [direction, setDirection] = useState<'up' | 'down' | null>(null);
+  // A shared value, not React state - flash direction only ever needs to be read inside
+  // the worklet below. Routing it through useState instead would re-render this component
+  // on the JS thread on every single price tick (every watchlist row + the Terminal price,
+  // at a 100ms broadcast cadence) purely to recolor a UI-thread-animated overlay that
+  // doesn't need React to re-render at all.
+  const isUpFlash = useSharedValue(true);
 
   const steadyStateColor =
     changePercent == null
@@ -36,16 +41,16 @@ export function PriceText({ value, style, changePercent }: PriceTextProps) {
 
   useEffect(() => {
     if (value !== previousValue.current) {
-      setDirection(value > previousValue.current ? 'up' : 'down');
+      isUpFlash.value = value > previousValue.current;
       previousValue.current = value;
       flashOpacity.value = 0.35;
       flashOpacity.value = withTiming(0, { duration: FLASH_DURATION_MS });
     }
-  }, [value, flashOpacity]);
+  }, [value, flashOpacity, isUpFlash]);
 
   const flashStyle = useAnimatedStyle(() => ({
     opacity: flashOpacity.value,
-    backgroundColor: direction === 'down' ? colors.signal.negative : colors.signal.positive,
+    backgroundColor: isUpFlash.value ? colors.signal.positive : colors.signal.negative,
   }));
 
   return (
