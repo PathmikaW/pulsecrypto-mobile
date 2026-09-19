@@ -30,9 +30,10 @@ pnpm install
 cp .env.example .env
 ```
 
-Set `EXPO_PUBLIC_API_BASE_URL` / `EXPO_PUBLIC_WS_BASE_URL` to wherever the backend is
-reachable — for the Android Emulator connecting to a backend on your host machine, that's
-`http://10.0.2.2:3000` / `ws://10.0.2.2:3000`, not `localhost`.
+The example already points an Android Emulator at a backend running on the same machine
+(`http://10.0.2.2:3000` / `ws://10.0.2.2:3000`, not `localhost`). See
+[Configuration and access](#configuration-and-access) below for the other options and for exactly
+what you do — and don't — need.
 
 **Native projects**
 
@@ -46,6 +47,47 @@ pnpm expo prebuild --clean
 
 `android/` and `ios/` are generated, not committed — re-run this after any native
 dependency changes (a new `expo install` package, a new config plugin), not on every build.
+
+---
+
+## Configuration and access
+
+**What the app needs: two URLs, nothing else.** `.env` is gitignored and holds only
+`EXPO_PUBLIC_API_BASE_URL` and `EXPO_PUBLIC_WS_BASE_URL`. They are public addresses, not secrets — the
+`EXPO_PUBLIC_` prefix means they are inlined into the app bundle, so never put a secret in them. After
+changing either, restart Metro with `pnpm expo start --dev-client --clear`.
+
+| You want to run against                                      | Set both URLs to                                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| A backend on your machine, Android Emulator                  | `http://10.0.2.2:3000` and `ws://10.0.2.2:3000` (the default in `.env.example`) |
+| A backend on your machine, physical device on the same Wi-Fi | `http://<your-machine's-LAN-IP>:3000` and `ws://<same>:3000`                    |
+| A hosted backend                                             | `http://<host>:3000` and `ws://<host>:3000` — see below                         |
+
+**You do not need:** an API key, a Binance account, an Expo/EAS account (builds are local with
+`pnpm expo run:android`), an Apple or Google developer account, or any AWS account. The project contains
+no secrets. The simplest way to run everything is the backend on your own machine
+(`pnpm start` in `pulsecrypto-backend`) plus the emulator.
+
+**Using the owner's hosted backend (optional).** For the submission the backend was also run on a small
+cloud VM (see the backend's [`docs/deployment-aws-ec2.md`](../pulsecrypto-backend/docs/deployment-aws-ec2.md)).
+That instance is private: its firewall accepts only the owner's IP address, it stops itself after six
+hours, and its address changes each time it is started. To use it, contact the repository owner and ask
+for:
+
+1. **the current host address** — this is the only "configuration" you will be given; there are no keys,
+2. **your public IP added to the firewall** — send the address shown by <https://checkip.amazonaws.com>
+   from the network you will use, and
+3. **the instance to be running.**
+
+Then put the address in `.env` as shown above. If the app sits on "RECONNECTING…", your IP changed or the
+instance is stopped.
+
+**Release builds need TLS.** Outside development mode the app refuses to start unless both URLs are
+`https://`/`wss://` (ADR-M6). The plain `http`/`ws` setups above are for development builds and the emulator.
+
+**Switching backends:** clear the app's stored data first
+(`adb shell pm clear com.anonymous.pulsecryptomobile`), because the last-known market data is cached on
+the device — see Known limitations.
 
 ---
 
@@ -233,6 +275,9 @@ Stated plainly rather than left for a reviewer to find:
   verified by running the app on the Android Emulator instead.
 - **No CI.** The Husky hooks (lint-staged, commitlint, and typecheck + tests on push) are the only
   automated gate. The contract mirror is checked on demand with `pnpm run check:contracts`.
+- **Cached pairs from an earlier backend linger.** Last-known market data is cached in MMKV, so a pair
+  that a different (or restarted) backend no longer tracks stays in the watchlist with its last price
+  and the app-wide connection indicator, until the app data is cleared.
 - **English only, no language picker** — see Assumptions.
 - **`pnpm audit --prod` reports one moderate advisory** (`uuid`, transitive through Expo's
   build-time config plugins — not part of the runtime bundle).
