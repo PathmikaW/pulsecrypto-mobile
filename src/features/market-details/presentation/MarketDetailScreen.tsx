@@ -230,7 +230,11 @@ function StatCell({ label, value, valueColor }: { label: string; value: string; 
 const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | undefined }) {
   const { t, i18n } = useTranslation('market-details');
   return (
-    <View style={styles.statRow}>
+    // Own row style, not statRow: this is nested inside priceSection, which already
+    // applies paddingHorizontal - reusing statRow's own paddingHorizontal here doubled
+    // the inset (the "24H HIGH has extra left padding" bug). statRow's padding is for the
+    // standalone Spread/Buy/Sell row below, which isn't nested in a padded parent.
+    <View style={styles.priceStatsRow}>
       <StatCell label={t('high24h')} value={meta ? formatPrice(meta.high24h, i18n.language) : '—'} />
       <StatCell label={t('low24h')} value={meta ? formatPrice(meta.low24h, i18n.language) : '—'} />
       {/* Figma's top stat row is High/Low/Market Cap, not Volume - matches exactly.
@@ -262,8 +266,14 @@ const styles = StyleSheet.create({
   // both inline at the same baseline).
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   changeInline: { ...typography.tableValueSmall, fontSize: 14 },
-  statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.lg },
-  statCell: { flex: 1 },
+  statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.xl },
+  priceStatsRow: { flexDirection: 'row', marginTop: spacing.lg, gap: spacing.xl },
+  // No flex:1: sized to content, matching Figma's tightly-packed columns instead of
+  // evenly-stretched thirds. This also fixes a real bug - flex:1 inside depthLegendBox
+  // (an absolutely-positioned, auto-width container with no definite main-axis size to
+  // grow against) was collapsing the Liquidity Gap/Pressure StatCells to zero width,
+  // making that box invisible even though it was rendering.
+  statCell: {},
   statLabel: { color: colors.text.label, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
   // Edge-to-edge, no horizontal margin - matches Figma exactly (was: inset like the other
