@@ -24,7 +24,7 @@ export function MicroCard({ icon, tint, label, value }: MicroCardProps) {
         <Icon name={icon} size={20} color={tint} />
       </View>
       <View style={styles.textBlock}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: tint }]}>{label}</Text>
         <Text style={styles.value}>{value}</Text>
       </View>
     </View>
@@ -48,6 +48,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textBlock: { flex: 1, gap: 2 },
-  label: { color: colors.text.label, ...typography.labelCaps },
-  value: { color: colors.text.primary, ...typography.bodySmall },
+  // label's color comes from the `tint` prop at render time (Figma colors each card's bold
+  // label to match its own icon - green/pink/light-gray - not a uniform color); value is
+  // the dim description text, which was backwards from this (label was gray, value was
+  // white - the opposite of Figma's treatment).
+  label: { ...typography.labelCaps },
+  value: { color: colors.text.label, ...typography.bodySmall },
 });
