@@ -268,7 +268,9 @@ const styles = StyleSheet.create({
   // the price, not floated in the vertical middle of the large price digits (Figma shows
   // both inline at the same baseline).
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  changeInline: { ...typography.tableValueSmall, fontSize: 14 },
+  // Was tableValueSmall (10px/10 line-height) with an ad-hoc fontSize:14 override that left
+  // the line-height too tight for the larger size - tableValue is the real 14px/14 token.
+  changeInline: { ...typography.tableValue },
   statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.xl },
   priceStatsRow: { flexDirection: 'row', marginTop: spacing.lg, gap: spacing.xl },
   // No flex:1: sized to content, matching Figma's tightly-packed columns instead of

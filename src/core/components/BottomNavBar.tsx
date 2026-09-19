@@ -69,6 +69,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   tabContentActive: { backgroundColor: colors.signal.positiveMuted },
-  label: { color: colors.text.label, ...typography.labelCaps },
+  // textTransform: 'none' overrides labelCaps' default uppercase - Figma's nav labels
+  // ("Terminal", "Markets"...) are title case, not all-caps, unlike most other labelCaps
+  // usages in this app.
+  label: { color: colors.text.label, ...typography.labelCaps, textTransform: 'none' },
   labelActive: { color: colors.signal.positive },
 });
