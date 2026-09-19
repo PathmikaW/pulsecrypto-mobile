@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RootStackParamList } from '../../navigation/types';
 import type { SvgIconName } from '../icons/svgIcons';
-import { colors, spacing, typography } from '../theme';
+import { colors, radius, spacing, typography } from '../theme';
 import { Icon } from './Icon';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
@@ -40,8 +40,12 @@ export function BottomNavBar() {
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
           >
-            <Icon name={icon} size={20} color={tintColor} />
-            <Text style={[styles.label, isActive && styles.labelActive]}>{t(labelKey)}</Text>
+            {/* Active tab gets a pill background behind icon+label, not just a color
+            change - matches Figma's active tab state. */}
+            <View style={[styles.tabContent, isActive && styles.tabContentActive]}>
+              <Icon name={icon} size={20} color={tintColor} />
+              <Text style={[styles.label, isActive && styles.labelActive]}>{t(labelKey)}</Text>
+            </View>
           </Pressable>
         );
       })}
@@ -56,7 +60,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
   },
-  tab: { flex: 1, alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
+  tabContent: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+  },
+  tabContentActive: { backgroundColor: colors.signal.positiveMuted },
   label: { color: colors.text.label, ...typography.labelCaps },
   labelActive: { color: colors.signal.positive },
 });

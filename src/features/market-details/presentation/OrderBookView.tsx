@@ -116,6 +116,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   headerCell: { flex: 1, color: colors.text.label, ...typography.labelCaps, textAlign: 'right' },
   priceHeaderCell: { textAlign: 'left' },

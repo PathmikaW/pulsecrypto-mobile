@@ -148,6 +148,8 @@ export function MarketDetailScreen({ route }: Props) {
 
             <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
 
+            <View style={styles.sectionDivider} />
+
             <View style={styles.depthPanel}>
               <MarketDepthChart />
 
@@ -259,7 +261,8 @@ const styles = StyleSheet.create({
   },
   loadingSection: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxl },
   loadingText: { color: colors.text.label, ...typography.bodySmall },
-  priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs },
+  // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
+  priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.lg },
   priceLabel: { color: colors.text.label, ...typography.labelCaps },
   // Baseline-aligned, not center-aligned: the percent badge sits on the same text line as
   // the price, not floated in the vertical middle of the large price digits (Figma shows
@@ -276,6 +279,9 @@ const styles = StyleSheet.create({
   statCell: {},
   statLabel: { color: colors.text.label, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
+  // Thin full-bleed hairline before the Market Depth panel, matching the one Figma also
+  // shows under the order book's PRICE/AMOUNT/TOTAL header rows.
+  sectionDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: spacing.lg },
   // Edge-to-edge, no horizontal margin - matches Figma exactly (was: inset like the other
   // sections, but the Market Depth card bleeds to the screen edges in the reference).
   depthPanel: {
