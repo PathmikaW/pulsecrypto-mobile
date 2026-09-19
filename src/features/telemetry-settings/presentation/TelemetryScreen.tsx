@@ -37,23 +37,20 @@ export function TelemetryScreen() {
           <DataThrottlingCard />
           <PerformanceDashboardCard />
           <MicroCard
-            icon="flash-outline"
-            boxColor={colors.signal.positive}
-            glyphColor={colors.signal.positiveMuted}
+            icon="gpuAcceleration"
+            tint={colors.signal.positive}
             label={t('telemetry.gpuAcceleration')}
             value={t('telemetry.gpuAccelerationValue')}
           />
           <MicroCard
-            icon="shield-outline"
-            boxColor={colors.signal.negativeMuted}
-            glyphColor={colors.signal.negative}
+            icon="apiLatency"
+            tint={colors.signal.negativeMuted}
             label={t('telemetry.apiLatency')}
             value={t('telemetry.apiLatencyValue')}
           />
           <MicroCard
-            icon="server-outline"
-            boxColor={colors.text.numeric}
-            glyphColor={colors.background.screenTelemetry}
+            icon="storageCache"
+            tint={colors.text.numeric}
             label={t('telemetry.storageCache')}
             value={t('telemetry.storageCacheValue')}
           />

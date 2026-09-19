@@ -73,5 +73,7 @@ const styles = StyleSheet.create({
   leading: { gap: spacing.xs },
   symbol: { color: colors.text.primary, ...typography.body },
   trailing: { alignItems: 'flex-end', gap: spacing.xs },
-  price: { fontSize: 16, lineHeight: 20 },
+  // Was fontSize/lineHeight only, with no fontFamily at all - silently rendering the OS
+  // system font instead of JetBrains Mono, same bug class as the site-wide font-loading fix.
+  price: { ...typography.tableValueLarge },
 });

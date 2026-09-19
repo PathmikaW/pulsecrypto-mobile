@@ -4,14 +4,16 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { OrderBookLevel } from '../../../core/domain/models/OrderBook';
 import { colors, spacing, typography } from '../../../core/theme';
+import { getCachedNumberFormat } from '../../../core/utils/intlFormatterCache';
 
 const DISPLAY_DEPTH = 10; // rows shown per side - a display choice, independent of the
 // backend's ORDER_BOOK_PRESSURE_DEPTH (which happens to also default to 10)
 
 function formatOrderBookNumber(value: number, locale: string, fractionDigits: number): string {
   // Order book cells are plain grouped numbers, no currency symbol (verified against the
-  // Figma file's own "64,239.50" style — only the main price ticker gets a "$").
-  return new Intl.NumberFormat(locale, {
+  // Figma file's own "64,239.50" style — only the main price ticker gets a "$"). Cached
+  // formatter (ADR-M10 perf pass) - this runs up to 60x/tick across the visible rows.
+  return getCachedNumberFormat(locale, {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
@@ -71,7 +73,9 @@ function TableHeader({ baseAsset }: { baseAsset: string }) {
   return (
     <View style={styles.header}>
       <Text style={[styles.headerCell, styles.priceHeaderCell]}>{t('priceHeader')}</Text>
-      <Text style={styles.headerCell}>{t('amountHeader', { asset: baseAsset })}</Text>
+      <Text style={[styles.headerCell, styles.amountHeaderCell]}>
+        {t('amountHeader', { asset: baseAsset })}
+      </Text>
       <Text style={styles.headerCell}>{t('totalHeader')}</Text>
     </View>
   );
@@ -114,19 +118,40 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
+    // The hairline is this row's own top border, not a separate line floating above it
+    // with a gap (was: a standalone divider View before the whole OrderBookView, which
+    // read as disconnected from the row it was meant to introduce).
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  headerCell: { flex: 1, color: colors.text.label, ...typography.labelCaps, textAlign: 'right' },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  headerCell: { flex: 1, color: colors.text.numeric, ...typography.labelCaps, textAlign: 'right' },
   priceHeaderCell: { textAlign: 'left' },
+  // Fixed left inset, not textAlign:'center' - centering makes each row's own starting
+  // digit drift depending on that value's own text width (a longer/shorter quantity
+  // starts at a different x than its neighbors), so rows don't line up with each other or
+  // with this header's "A". A shared paddingLeft on both this and amountCell keeps every
+  // row's first digit at the exact same x as "A", while still reading as a roughly
+  // centered column rather than flush against PRICE like a plain left-align would.
+  amountHeaderCell: { textAlign: 'left', paddingLeft: spacing.xxl },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
   bar: { position: 'absolute', left: 0, top: 0, bottom: 0, opacity: 0.15 },
   priceCell: { flex: 1, ...typography.tableValue, textAlign: 'left' },
   bidColor: { color: colors.signal.positive },
   askColor: { color: colors.signal.negative },
-  amountCell: { flex: 1, color: colors.text.primary, ...typography.tableValue, textAlign: 'right' },
+  amountCell: {
+    flex: 1,
+    color: colors.text.primary,
+    ...typography.tableValue,
+    textAlign: 'left',
+    paddingLeft: spacing.xxl,
+  },
   totalCell: { flex: 1, color: colors.text.numeric, ...typography.tableValue, textAlign: 'right' },
 });

@@ -85,15 +85,19 @@ export function AccountDrawer() {
             panelStyle,
           ]}
         >
+          {/* Avatar sits left of the name/tier text block, not above it - an earlier reading
+          stacked them vertically; Figma has the icon and text side by side. */}
           <View style={styles.profile}>
             <View style={styles.avatar}>
               <Icon name="avatarPerson" size={28} color={colors.signal.positiveMuted} />
             </View>
-            <Text style={styles.name}>{t('accountDrawer.profileName')}</Text>
-            <Text style={styles.tier}>
-              {t('accountDrawer.tierLabel')}
-              <Text style={styles.tierId}>{t('accountDrawer.tierId')}</Text>
-            </Text>
+            <View style={styles.profileText}>
+              <Text style={styles.name}>{t('accountDrawer.profileName')}</Text>
+              <Text style={styles.tier}>
+                {t('accountDrawer.tierLabel')}
+                <Text style={styles.tierId}>{t('accountDrawer.tierId')}</Text>
+              </Text>
+            </View>
           </View>
           <View style={styles.divider} />
 
@@ -102,12 +106,11 @@ export function AccountDrawer() {
             <DrawerLink icon="drawerApiKeys" label={t('accountDrawer.apiKeys')} onPress={showComingSoon} />
             <DrawerLink icon="drawerSecurity" label={t('accountDrawer.security')} onPress={showComingSoon} />
 
-            <Text style={styles.groupLabel}>{t('accountDrawer.trading')}</Text>
+            <Text style={[styles.groupLabel, styles.tradingGroupLabel]}>{t('accountDrawer.trading')}</Text>
             <DrawerLink
               icon="drawerTradeHistory"
               label={t('accountDrawer.tradeHistory')}
               onPress={showComingSoon}
-              active
             />
             <DrawerLink icon="drawerSupport" label={t('accountDrawer.support')} onPress={showComingSoon} />
           </View>
@@ -124,22 +127,34 @@ export function AccountDrawer() {
   );
 }
 
+// The green highlight is a press-feedback state, not a permanent "selected" one - an
+// earlier reading of Figma's pressed-state variant for "Trade History" mistook it for the
+// link's default/resting appearance. All four links behave identically; none is
+// permanently highlighted. Padding is fixed between states - only the background color
+// changes, so nothing shifts position when pressed.
 function DrawerLink({
   icon,
   label,
-  active,
   onPress,
 }: {
   icon: SvgIconName;
   label: string;
-  active?: boolean;
   onPress: (label: string) => void;
 }) {
-  const tintColor = active ? colors.signal.positiveMuted : colors.text.numeric;
   return (
-    <Pressable style={[styles.link, active && styles.linkActive]} onPress={() => onPress(label)}>
-      <Icon name={icon} size={16} color={tintColor} />
-      <Text style={[styles.linkText, active && { color: tintColor }]}>{label}</Text>
+    <Pressable
+      style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
+      onPress={() => onPress(label)}
+    >
+      {({ pressed }) => {
+        const tintColor = pressed ? colors.signal.positiveMuted : colors.text.numeric;
+        return (
+          <>
+            <Icon name={icon} size={16} color={tintColor} />
+            <Text style={[styles.linkText, pressed && { color: tintColor }]}>{label}</Text>
+          </>
+        );
+      }}
     </Pressable>
   );
 }
@@ -155,8 +170,9 @@ const styles = StyleSheet.create({
   // lines can span the drawer's full width edge-to-edge, matching Figma exactly.
   content: { paddingHorizontal: spacing.lg },
   profile: {
-    alignItems: 'flex-start',
-    gap: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
   },
@@ -168,24 +184,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  profileText: { gap: spacing.xs },
   name: { color: colors.text.primary, ...typography.heading },
   tier: { color: colors.text.numeric, ...typography.bodySmall },
   tierId: { color: colors.signal.positive },
-  divider: { height: 1, backgroundColor: colors.background.divider, marginBottom: spacing.md },
-  groupLabel: { color: colors.text.label, ...typography.labelCaps, marginTop: spacing.md },
+  divider: { height: 2, backgroundColor: colors.background.divider, marginBottom: spacing.md },
+  // More vertical breathing room around each group - was flush against its links.
+  groupLabel: {
+    color: colors.text.label,
+    ...typography.labelCaps,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  // Extra top margin for "TRADING" specifically, not "ACCOUNT" (which shouldn't move
+  // further from the divider above it) - separates it more from Security above it.
+  tradingGroupLabel: { marginTop: spacing.xxl },
   link: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
   },
-  linkActive: { backgroundColor: colors.signal.positiveDeep },
-  linkText: { color: colors.text.primary, ...typography.body },
+  linkPressed: { backgroundColor: colors.signal.positiveDeep },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  linkText: { color: colors.text.numeric, ...typography.body },
   signOutBorder: {
     marginTop: 'auto',
-    borderTopWidth: 1,
+    borderTopWidth: 2,
     borderTopColor: colors.background.divider,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -199,5 +226,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
   },
-  signOutText: { color: colors.text.primary, ...typography.body },
+  // text.primary (#DBE3F4, already correct) at weight 700 - body's own font is Inter
+  // 400 Regular; a custom TTF loaded via useFonts() doesn't synthesize other weights from
+  // it, so getting real bold means switching fontFamily to the 700 weight's own font file,
+  // not just adding fontWeight on top of the regular one.
+  signOutText: {
+    color: colors.text.primary,
+    ...typography.body,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+  },
 });

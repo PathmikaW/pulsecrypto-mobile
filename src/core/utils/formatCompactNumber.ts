@@ -1,3 +1,5 @@
+import { getCachedNumberFormat } from './intlFormatterCache';
+
 const SUFFIXES: readonly { threshold: number; suffix: string }[] = [
   { threshold: 1e12, suffix: 'T' },
   { threshold: 1e9, suffix: 'B' },
@@ -11,8 +13,8 @@ const SUFFIXES: readonly { threshold: number; suffix: string }[] = [
 export function formatCompactNumber(value: number, locale: string): string {
   const abs = Math.abs(value);
   const match = SUFFIXES.find((s) => abs >= s.threshold);
-  if (!match) return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
+  if (!match) return getCachedNumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
 
   const scaled = value / match.threshold;
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(scaled)}${match.suffix}`;
+  return `${getCachedNumberFormat(locale, { maximumFractionDigits: 1 }).format(scaled)}${match.suffix}`;
 }

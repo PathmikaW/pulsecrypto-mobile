@@ -13,7 +13,15 @@ const { usePairsMeta } = require('../../src/core/hooks/usePairsMeta');
 const mockedUsePairsMeta = usePairsMeta as jest.Mock;
 
 function makeMeta(symbol: string, displayName: string) {
-  return { symbol, displayName, tradingStatus: 'TRADING' as const, high24h: 1, low24h: 1, volume24h: 1 };
+  return {
+    symbol,
+    displayName,
+    tradingStatus: 'TRADING' as const,
+    high24h: 1,
+    low24h: 1,
+    volume24h: 1,
+    marketCap: 1,
+  };
 }
 
 function makeMarketData(pair: string): MarketData {

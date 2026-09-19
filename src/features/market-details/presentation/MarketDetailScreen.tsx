@@ -1,8 +1,9 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { BlurView } from 'expo-blur';
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
 import { TopAppBar } from '../../../core/components/TopAppBar';
 import { LastUpdatedLabel } from '../../../core/components/LastUpdatedLabel';
@@ -21,6 +22,7 @@ import type { RootStackParamList } from '../../../navigation/types';
 import { useUiStore } from '../../../store/uiStore';
 import { MarketDepthChart } from './MarketDepthChart';
 import { OrderBookView } from './OrderBookView';
+import { TerminalSkeleton } from './TerminalSkeleton';
 
 const LIQUIDITY_GAP_MEDIUM_THRESHOLD = 5;
 const LIQUIDITY_GAP_HIGH_THRESHOLD = 15;
@@ -99,10 +101,34 @@ export function MarketDetailScreen({ route }: Props) {
         : colors.signal.positive;
 
   if (!pair) {
-    // No tracked pairs resolved yet (cold launch, /pairs/meta still loading/failed)
+    // No tracked pairs resolved yet - cold launch with the backend unreachable (no REST
+    // response, no WS tick, and no MMKV cache since nothing has ever synced). Still full
+    // chrome (TopAppBar + BottomNavBar), not a bare spinner with no way to navigate away -
+    // both /pairs/meta and the WS connection retry indefinitely on their own, so this
+    // resolves itself the moment either succeeds.
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.signal.positive} />
+      <View style={styles.container}>
+        <TopAppBar title={t('common:nav.terminal')} />
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Explains the wait and offers a manual nudge - the WS connection already
+          retries forever on its own, but /pairs/meta's retries are finite (TanStack
+          Query's default), so once those are exhausted this is the only way to prompt
+          another REST attempt without restarting the app. */}
+          <View style={styles.waitingBanner}>
+            <Text style={styles.waitingText}>{t('waitingForConnection')}</Text>
+            <Pressable
+              style={styles.retryButton}
+              onPress={() => pairsMetaQuery.refetch()}
+              disabled={pairsMetaQuery.isFetching}
+            >
+              <Text style={styles.retryText}>
+                {pairsMetaQuery.isFetching ? t('common:connection.connecting') : t('retry')}
+              </Text>
+            </Pressable>
+          </View>
+          <TerminalSkeleton />
+        </ScrollView>
+        <BottomNavBar />
       </View>
     );
   }
@@ -110,47 +136,58 @@ export function MarketDetailScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <TopAppBar title={formatPairDisplayName(meta?.displayName, pair)} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      {/* showsVerticalScrollIndicator=false: Android reserves a thin gutter for the
+      scrollbar track even when it's not actively visible, which showed up as an
+      asymmetric right-edge gap on the edge-to-edge Market Depth panel. */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {marketData == null ? (
-          <View style={styles.loadingSection}>
-            <ActivityIndicator color={colors.signal.positive} />
-            <Text style={styles.loadingText}>{t('loadingOrderBook')}</Text>
-          </View>
+          <TerminalSkeleton />
         ) : (
           <>
-            <View style={styles.priceSection}>
-              <Text style={styles.priceLabel}>{t('lastPrice')}</Text>
-              <View style={styles.priceRow}>
-                <PriceText value={marketData.price} changePercent={marketData.change24h} />
-                <Text
-                  style={[
-                    styles.changeInline,
-                    { color: marketData.change24h < 0 ? colors.signal.negative : colors.signal.positive },
-                  ]}
-                >
-                  {`${marketData.change24h < 0 ? '▼' : '▲'} ${formatPercent(Math.abs(marketData.change24h), i18n.language)}`}
-                </Text>
+            {/* One cohesive panel (LAST PRICE through Spread/Buy/Sell Pressure) on its own
+            background - #141C28, distinct from the screen's base background - not a flat
+            continuation of it. paddingBottom is the breathing room before the order book
+            table, which was previously flush against the Spread/Buy/Sell row. */}
+            <View style={styles.priceInfoPanel}>
+              <View style={styles.priceSection}>
+                <Text style={styles.priceLabel}>{t('lastPrice')}</Text>
+                <View style={styles.priceRow}>
+                  <PriceText value={marketData.price} changePercent={marketData.change24h} />
+                  <Text
+                    style={[
+                      styles.changeInline,
+                      { color: marketData.change24h < 0 ? colors.signal.negative : colors.signal.positive },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {`${marketData.change24h < 0 ? '▼' : '▲'} ${formatPercent(Math.abs(marketData.change24h), i18n.language)}`}
+                  </Text>
+                </View>
+                <PriceStatsRow meta={meta} />
               </View>
-              <PriceStatsRow meta={meta} />
-            </View>
 
-            <View style={styles.statRow}>
-              <StatCell label={t('spread')} value={formatPrice(marketData.spread, i18n.language)} />
-              <StatCell
-                label={t('buyPressure')}
-                value={formatPercent(marketData.buyPressure, i18n.language)}
-              />
-              <StatCell
-                label={t('sellPressure')}
-                value={formatPercent(marketData.sellPressure, i18n.language)}
-              />
+              <View style={styles.statRow}>
+                <StatCell label={t('spread')} value={formatPrice(marketData.spread, i18n.language)} />
+                <StatCell
+                  label={t('buyPressure')}
+                  value={formatPercent(marketData.buyPressure, i18n.language)}
+                />
+                <StatCell
+                  label={t('sellPressure')}
+                  value={formatPercent(marketData.sellPressure, i18n.language)}
+                />
+              </View>
             </View>
 
             <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
 
             <View style={styles.depthPanel}>
               <MarketDepthChart />
-              <View style={styles.depthHeaderRow}>
+
+              {/* Top-left block: title, then bullets inline beside each other on the next
+              line - matches Figma exactly (was: bullets stacked vertically, split to the
+              right of the title). */}
+              <View style={styles.depthTopLeft}>
                 <Text style={styles.depthTitle}>{t('marketDepth')}</Text>
                 {liquidityGap && (
                   <View style={styles.depthBullets}>
@@ -175,8 +212,16 @@ export function MarketDetailScreen({ route }: Props) {
                   </View>
                 )}
               </View>
+
+              {/* Bottom-right floating box, not full width - matches Figma exactly (was:
+              a full-width box in normal flow below the header). Real background blur
+              (Figma: 12), not just a translucent fill - BlurView provides the blur, a
+              tinted overlay on top of it provides the exact color, since BlurView's own
+              `tint` only accepts light/dark/default, not an arbitrary hex. */}
               <View style={styles.depthLegendBox}>
-                <View style={styles.statRow}>
+                <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={[StyleSheet.absoluteFill, styles.depthLegendTint]} />
+                <View style={styles.depthStatRow}>
                   <StatCell
                     label={t('liquidityGap')}
                     value={
@@ -188,6 +233,7 @@ export function MarketDetailScreen({ route }: Props) {
                     }
                     valueColor={liquidityGapColor}
                   />
+                  <View style={styles.depthStatDivider} />
                   <StatCell
                     label={t('pressureLabel')}
                     value={pressureLabel ?? '—'}
@@ -197,7 +243,9 @@ export function MarketDetailScreen({ route }: Props) {
               </View>
             </View>
 
-            <LastUpdatedLabel lastUpdatedAt={marketData.lastUpdatedAt} />
+            <View style={styles.lastUpdatedWrap}>
+              <LastUpdatedLabel lastUpdatedAt={marketData.lastUpdatedAt} />
+            </View>
           </>
         )}
       </ScrollView>
@@ -222,12 +270,19 @@ function StatCell({ label, value, valueColor }: { label: string; value: string; 
 const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | undefined }) {
   const { t, i18n } = useTranslation('market-details');
   return (
-    <View style={styles.statRow}>
+    // Own row style, not statRow: this is nested inside priceSection, which already
+    // applies paddingHorizontal - reusing statRow's own paddingHorizontal here doubled
+    // the inset (the "24H HIGH has extra left padding" bug). statRow's padding is for the
+    // standalone Spread/Buy/Sell row below, which isn't nested in a padded parent.
+    <View style={styles.priceStatsRow}>
       <StatCell label={t('high24h')} value={meta ? formatPrice(meta.high24h, i18n.language) : '—'} />
       <StatCell label={t('low24h')} value={meta ? formatPrice(meta.low24h, i18n.language) : '—'} />
+      {/* Figma's top stat row is High/Low/Market Cap, not Volume - matches exactly.
+      marketCap is a static placeholder (see contracts/schemas.ts), same treatment as the
+      Telemetry screen's other display-only values (ADR-M10). */}
       <StatCell
-        label={t('volume24h')}
-        value={meta ? formatCompactNumber(meta.volume24h, i18n.language) : '—'}
+        label={t('marketCap')}
+        value={meta ? formatCompactNumber(meta.marketCap, i18n.language) : '—'}
       />
     </View>
   );
@@ -235,42 +290,105 @@ const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | u
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
+  lastUpdatedWrap: { marginTop: spacing.md },
   scrollContent: { paddingBottom: spacing.xl },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: colors.background.screenTerminal,
+  waitingBanner: {
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xxl,
   },
-  loadingSection: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xxl },
-  loadingText: { color: colors.text.label, ...typography.bodySmall },
-  priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs },
-  priceLabel: { color: colors.text.label, ...typography.labelCaps },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  changeInline: { ...typography.tableValueSmall, fontSize: 14 },
-  statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.lg },
-  statCell: { flex: 1 },
-  statLabel: { color: colors.text.label, ...typography.labelCaps },
-  statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
-  depthPanel: {
-    marginTop: spacing.lg,
-    marginHorizontal: spacing.lg,
+  waitingText: { color: colors.text.label, ...typography.bodySmall, textAlign: 'center' },
+  retryButton: {
     backgroundColor: colors.background.card,
-    borderRadius: radius.card,
-    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.background.divider,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xl,
+  },
+  retryText: { color: colors.signal.positive, ...typography.labelCaps },
+  // Verified color - was a flat continuation of the screen's own background.
+  priceInfoPanel: { backgroundColor: colors.background.navBar, paddingBottom: spacing.lg },
+  // marginTop: gap between the TopAppBar and LAST PRICE - was flush against it.
+  priceSection: { paddingHorizontal: spacing.lg, gap: spacing.xs, marginTop: spacing.xl },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  priceLabel: { color: colors.text.numeric, ...typography.labelCaps },
+  // Baseline-aligned, not center-aligned: the percent badge sits on the same text line as
+  // the price, not floated in the vertical middle of the large price digits (Figma shows
+  // both inline at the same baseline).
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  // Was tableValueSmall (10px/10 line-height) with an ad-hoc fontSize:14 override that left
+  // the line-height too tight for the larger size - tableValue is the real 14px/14 token.
+  // flexShrink: 0 - was wrapping onto a second line ("4.15%" dropping below the "▲") when
+  // the row ran short on width, since RN will shrink/wrap a Text's own content by default
+  // rather than let it overflow; numberOfLines={1} on the Text itself is the other half.
+  changeInline: { ...typography.tableValue, flexShrink: 0 },
+  statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.xl },
+  // No marginTop of its own now - priceSection's gap:xs already provides spacing between
+  // its children; this row's separate 16px marginTop stacked on top of that, making the
+  // gap to LAST PRICE larger than intended.
+  priceStatsRow: { flexDirection: 'row', gap: spacing.xl },
+  // No flex:1: sized to content, matching Figma's tightly-packed columns instead of
+  // evenly-stretched thirds. This also fixes a real bug - flex:1 inside depthLegendBox
+  // (an absolutely-positioned, auto-width container with no definite main-axis size to
+  // grow against) was collapsing the Liquidity Gap/Pressure StatCells to zero width,
+  // making that box invisible even though it was rendering.
+  statCell: {},
+  // text.primary (near-white), not text.label (dim gray) - Figma shows these stat labels
+  // (24H HIGH/LOW/MARKET CAP, Spread/Buy Pressure/Sell Pressure) bright and bold, unlike
+  // the dimmer standalone section eyebrows (LAST PRICE, MARKET DEPTH).
+  // text.numeric (#C6C6CB) - verified value, covers 24H HIGH/LOW/MARKET CAP, Spread/Buy
+  // Pressure/Sell Pressure, and LIQUIDITY GAP/PRESSURE (all share this StatCell).
+  statLabel: { color: colors.text.numeric, ...typography.labelCaps },
+  statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
+  // Edge-to-edge (no horizontal margin), no marginTop, and no borderRadius - Figma shows
+  // the Market Depth card flush against the order book directly above it and bleeding to
+  // both screen edges. A radius on a truly edge-to-edge card reveals a sliver of the
+  // screen's own background color at the top/bottom-right corners where the curve pulls
+  // away from the device edge - that sliver was the reported "right side gap."
+  // borderTop is this panel's own top edge, not a separate divider View floating above it
+  // with a gap (same lesson as the order book header's hairline).
+  depthPanel: {
+    backgroundColor: colors.background.card,
     minHeight: 220,
     overflow: 'hidden',
-    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
-  depthHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  depthTitle: { color: colors.text.label, ...typography.labelCaps },
-  depthBullets: { gap: spacing.xs },
+  depthTopLeft: { position: 'absolute', top: spacing.lg, left: spacing.lg, gap: spacing.sm },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  depthTitle: { color: colors.text.numeric, ...typography.labelCaps },
+  depthBullets: { flexDirection: 'row', gap: spacing.md },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
+  // Reverted back to a genuinely floating inset card (all 4 corners rounded, margin from
+  // both edges) after a high-res reference confirmed this was correct all along - the
+  // "flush corner" change in a prior round was wrong; the reported right-side gap was
+  // never this box, and remains unresolved as a separate issue on the panel itself.
+  // overflow:'hidden' clips the BlurView/tint layers to the rounded corners; padding here
+  // (not on a separate content wrapper) still correctly insets depthStatRow, since RN's
+  // padding only affects normally-flowing children - the two absolute-fill layers below
+  // ignore it and cover the box edge-to-edge, which is what a background blur needs.
   depthLegendBox: {
-    backgroundColor: 'rgba(11,20,32,0.75)',
+    position: 'absolute',
+    bottom: spacing.lg,
+    right: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border.depthLegend,
     borderRadius: radius.card,
-    padding: spacing.md,
+    overflow: 'hidden',
+    padding: spacing.lg,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
+  // ~80% opacity tint over the BlurView - verified color (was mistakenly the border color
+  // in an earlier round).
+  depthLegendTint: { backgroundColor: `${colors.background.divider}CC` },
+  depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  depthStatDivider: { width: 1, height: 32, backgroundColor: colors.background.divider },
 });

@@ -23,6 +23,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-localization"]
+    "plugins": ["expo-localization", "expo-font", "expo-splash-screen", "expo-image"]
   }
 }

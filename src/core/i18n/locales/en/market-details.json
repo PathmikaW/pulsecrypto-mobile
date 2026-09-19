@@ -10,6 +10,7 @@
   "high24h": "24H HIGH",
   "low24h": "24H LOW",
   "volume24h": "24H VOLUME",
+  "marketCap": "MARKET CAP",
   "marketDepth": "MARKET DEPTH",
   "bidsTotal": "Bids: {{amount}} {{asset}}",
   "asksTotal": "Asks: {{amount}} {{asset}}",
@@ -22,6 +23,8 @@
   "pressureSellHeavy": "Sell Heavy",
   "pressureBalanced": "Balanced",
   "loadingOrderBook": "Waiting for order book data…",
+  "waitingForConnection": "Waiting for a connection to the server…",
+  "retry": "Retry",
   "accountDrawer": {
     "tierLabel": "Tier 3 Verified • ",
     "tierId": "ID: 882941",

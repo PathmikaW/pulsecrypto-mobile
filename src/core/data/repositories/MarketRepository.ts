@@ -18,6 +18,10 @@ interface MarketState {
    * Message Ingestion Rate" card (ADR-M10: cheaply-real metrics get wired to real values). */
   wsMessageRate: number;
   updatePair: (pair: TradingPairSymbol, data: MarketData) => void;
+  /** Applies a batch of pair updates in a single set() / React commit - see useWebSocket's
+   * rAF-aligned flush (ADR-M10 perf pass). A backend broadcast tick sends ~8 near-simultaneous
+   * per-pair messages; committing them one at a time was up to 8 re-renders per tick. */
+  updatePairs: (updates: [TradingPairSymbol, MarketData][]) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setWsMessageRate: (rate: number) => void;
 }
@@ -32,6 +36,12 @@ export const useMarketStore = create<MarketState>()(
       connectionStatus: 'connecting',
       wsMessageRate: 0,
       updatePair: (pair, data) => set((state) => ({ pairs: { ...state.pairs, [pair]: data } })),
+      updatePairs: (updates) =>
+        set((state) => {
+          const pairs = { ...state.pairs };
+          for (const [pair, data] of updates) pairs[pair] = data;
+          return { pairs };
+        }),
       setConnectionStatus: (status) => set({ connectionStatus: status }),
       setWsMessageRate: (wsMessageRate) => set({ wsMessageRate }),
     }),

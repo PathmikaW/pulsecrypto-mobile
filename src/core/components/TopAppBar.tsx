@@ -20,17 +20,22 @@ export function TopAppBar({ title }: TopAppBarProps) {
   const openDrawer = useUiStore((state) => state.openDrawer);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
       <Pressable onPress={openDrawer} hitSlop={12} accessibilityLabel={t('common:menu')}>
         <Icon name="menu" size={22} color={colors.signal.positive} />
       </Pressable>
-      <Text style={styles.title} numberOfLines={1}>
-        {title}
-      </Text>
-      <View style={styles.right}>
+      {/* Title + connection status are one adjacent block (matches Figma - the status sits
+      right next to the pair name, not independently centered), with the remaining space
+      pushing the pulse icon to the far right instead of splitting evenly around a centered
+      title. */}
+      <View style={styles.titleGroup}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
         <ConnectionIndicator />
-        <Icon name="livePulse" size={18} color={colors.signal.positive} />
       </View>
+      <View style={styles.spacer} />
+      <Icon name="livePulse" size={18} color={colors.signal.positive} />
     </View>
   );
 }
@@ -39,11 +44,15 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
+    paddingBottom: spacing.md,
+    gap: spacing.lg,
+    // Hairline under the header row, separating it from the screen's content below -
+    // Figma shows this on both Terminal and Telemetry.
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
-  title: { flex: 1, color: colors.text.primary, ...typography.heading, textAlign: 'center' },
-  right: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  titleGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  title: { color: colors.text.primary, ...typography.heading },
+  spacer: { flex: 1 },
 });

@@ -14,7 +14,9 @@ export function LastUpdatedLabel({ lastUpdatedAt }: LastUpdatedLabelProps) {
     new Date(lastUpdatedAt)
   );
 
+  // text.primary (white), not text.label - was inconsistent with LAST PRICE/MARKET DEPTH,
+  // whitened the same way for the same reason.
   return (
-    <Text style={{ color: colors.text.label, ...typography.bodySmall }}>{t('lastUpdated', { time })}</Text>
+    <Text style={{ color: colors.text.primary, ...typography.bodySmall }}>{t('lastUpdated', { time })}</Text>
   );
 }

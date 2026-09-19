@@ -57,6 +57,6 @@ export function CircularGauge({ value, max, unit, size = 128 }: CircularGaugePro
 
 const styles = StyleSheet.create({
   centerContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  value: { color: colors.text.primary, ...typography.priceDisplay, fontSize: 32 },
+  value: { color: colors.text.primary, ...typography.priceDisplay },
   unit: { color: colors.text.numeric, ...typography.labelCaps },
 });

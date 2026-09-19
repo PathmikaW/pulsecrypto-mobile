@@ -23,4 +23,8 @@ export const colors = {
     negative: '#EA295B',
     negativeMuted: '#FFB2BA',
   },
+  border: {
+    // The Market Depth panel's floating Liquidity Gap/Pressure overlay's border.
+    depthLegend: '#45474B',
+  },
 } as const;

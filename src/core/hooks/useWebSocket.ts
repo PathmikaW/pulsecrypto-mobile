@@ -4,6 +4,8 @@ import { WS_BASE_URL } from '../api/config';
 import { toMarketData } from '../data/mappers/MarketDataMapper';
 import { useMarketStore } from '../data/repositories/MarketRepository';
 import { WebSocketSource } from '../data/sources/WebSocketSource';
+import type { MarketData } from '../domain/models/MarketData';
+import type { TradingPairSymbol } from '../domain/models/TradingPair';
 import { useAppState } from './useAppState';
 
 // Mirrors the backend's own MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS (ADR-B4
@@ -24,6 +26,23 @@ export function useWebSocket(): void {
   const appState = useAppState();
 
   useEffect(() => {
+    // The backend's conflation tick broadcasts ~8 near-simultaneous per-pair messages back
+    // to back. Applying each with its own updatePair() was up to 8 separate set() calls /
+    // React commits per tick - a real, measured source of the reported FPS drops under live
+    // traffic. Instead, buffer parsed updates and commit them all in a single updatePairs()
+    // call once per animation frame, so a full broadcast tick is at most one re-render pass
+    // (ADR-M10 perf pass).
+    const pendingUpdates = new Map<TradingPairSymbol, MarketData>();
+    let flushHandle: number | null = null;
+
+    const flushPendingUpdates = () => {
+      flushHandle = null;
+      if (pendingUpdates.size === 0) return;
+      const updates = Array.from(pendingUpdates.entries());
+      pendingUpdates.clear();
+      useMarketStore.getState().updatePairs(updates);
+    };
+
     const source = new WebSocketSource({
       url: WS_BASE_URL,
       staleConnectionTimeoutMs: STALE_CONNECTION_TIMEOUT_MS,
@@ -46,7 +65,10 @@ export function useWebSocket(): void {
           if (__DEV__) console.warn('Dropped invalid market update', parsed.error);
           return;
         }
-        useMarketStore.getState().updatePair(parsed.data.pair, toMarketData(parsed.data));
+        pendingUpdates.set(parsed.data.pair, toMarketData(parsed.data));
+        if (flushHandle === null) {
+          flushHandle = requestAnimationFrame(flushPendingUpdates);
+        }
       },
     });
     sourceRef.current = source;
@@ -55,6 +77,11 @@ export function useWebSocket(): void {
     return () => {
       source.stop();
       sourceRef.current = null;
+      if (flushHandle !== null) {
+        cancelAnimationFrame(flushHandle);
+        flushHandle = null;
+      }
+      pendingUpdates.clear();
     };
   }, []);
 

@@ -1,11 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
+import { Icon } from '../../../core/components/Icon';
+import type { SvgIconName } from '../../../core/icons/svgIcons';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
 interface MicroCardProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  boxColor: string;
-  glyphColor: string;
+  icon: SvgIconName;
+  /** Both the icon box's background tint and the glyph's solid color derive from this one
+   * value (box = 10% opacity, glyph = full opacity) - verified directly against the real
+   * exported icons (Pulse Crypto Mockup/Overlay*.svg), which bake exactly that relationship
+   * in rather than two independently-chosen colors. */
+  tint: string;
   label: string;
   value: string;
 }
@@ -13,17 +17,14 @@ interface MicroCardProps {
 // The three small bento-grid stat cards (GPU Acceleration, API Latency, Storage Cache) -
 // static, display-only content per ADR-M10, since none of this has a real data source
 // (no GPU/render-pipeline introspection, no real latency probe, no real cache accounting).
-// Icon shapes are interim Ionicons stand-ins - the real Figma exports are still blocked by
-// a persistent API rate limit (see TelemetryScreen); box/glyph colors are already matched
-// to the verified Figma fills (a muted box tint with a darker, same-hue glyph on top).
-export function MicroCard({ icon, boxColor, glyphColor, label, value }: MicroCardProps) {
+export function MicroCard({ icon, tint, label, value }: MicroCardProps) {
   return (
     <View style={styles.card}>
-      <View style={[styles.iconBox, { backgroundColor: boxColor }]}>
-        <Ionicons name={icon} size={20} color={glyphColor} />
+      <View style={[styles.iconBox, { backgroundColor: `${tint}1A` }]}>
+        <Icon name={icon} size={24} color={tint} />
       </View>
       <View style={styles.textBlock}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: tint }]}>{label}</Text>
         <Text style={styles.value}>{value}</Text>
       </View>
     </View>
@@ -35,7 +36,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
-    backgroundColor: colors.background.card,
+    // Verified value: #1E2633 at 0x66 alpha (~40% opacity), not the fully solid card color.
+    backgroundColor: `${colors.background.card}66`,
     borderRadius: radius.card,
     padding: spacing.lg,
   },
@@ -47,6 +49,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   textBlock: { flex: 1, gap: 2 },
-  label: { color: colors.text.label, ...typography.labelCaps },
-  value: { color: colors.text.primary, ...typography.bodySmall },
+  // label's color comes from the `tint` prop at render time (Figma colors each card's bold
+  // label to match its own icon - green/pink/light-gray - not a uniform color); value is
+  // the dim description text, which was backwards from this (label was gray, value was
+  // white - the opposite of Figma's treatment).
+  label: { ...typography.labelCaps },
+  // text.numeric (#C6C6CB) - verified value, not text.label as tried earlier.
+  value: { color: colors.text.numeric, ...typography.bodySmall },
 });
