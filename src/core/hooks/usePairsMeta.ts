@@ -1,12 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchPairsMeta } from '../data/sources/RestSource';
 
-// Pull-to-refresh calls this query's refetch() only — it must never touch useWebSocket's
-// connection (ADR-M2/offline-behavior.md: client state and server state are structurally
-// independent, not just independent by convention).
+// Pull-to-refresh refetches this query only and never touches the WS connection (ADR-M2).
 export function usePairsMeta() {
   return useQuery({
     queryKey: ['pairsMeta'],
-    queryFn: fetchPairsMeta,
+    queryFn: ({ signal }) => fetchPairsMeta(signal),
   });
 }
