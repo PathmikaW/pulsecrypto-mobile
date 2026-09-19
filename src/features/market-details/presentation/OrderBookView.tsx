@@ -116,6 +116,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
+    // The hairline is this row's own top border, not a separate line floating above it
+    // with a gap (was: a standalone divider View before the whole OrderBookView, which
+    // read as disconnected from the row it was meant to introduce).
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.08)',
   },

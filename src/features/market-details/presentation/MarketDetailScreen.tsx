@@ -149,8 +149,6 @@ export function MarketDetailScreen({ route }: Props) {
               />
             </View>
 
-            <View style={styles.sectionDivider} />
-
             <OrderBookView bids={marketData.bids} asks={marketData.asks} baseAsset={baseAsset} />
 
             <View style={styles.depthPanel}>
@@ -287,16 +285,13 @@ const styles = StyleSheet.create({
   // the dimmer standalone section eyebrows (LAST PRICE, MARKET DEPTH).
   statLabel: { color: colors.text.primary, ...typography.labelCaps },
   statValue: { color: colors.text.numeric, ...typography.tableValueLarge, marginTop: spacing.xs },
-  // Thin full-bleed hairline above the order book's PRICE/AMOUNT/TOTAL header, matching
-  // Figma - was missing between the Spread/Buy/Sell row and the table.
-  sectionDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginTop: spacing.lg },
-  // Edge-to-edge (no horizontal margin) AND no marginTop - Figma shows the Market Depth
-  // card flush against the order book directly above it, not offset by a gap like the
-  // other sections (was: marginTop: spacing.lg, inherited from the section-spacing
-  // pattern used everywhere else, which doesn't apply here).
+  // Edge-to-edge (no horizontal margin), no marginTop, and no borderRadius - Figma shows
+  // the Market Depth card flush against the order book directly above it and bleeding to
+  // both screen edges. A radius on a truly edge-to-edge card reveals a sliver of the
+  // screen's own background color at the top/bottom-right corners where the curve pulls
+  // away from the device edge - that sliver was the reported "right side gap."
   depthPanel: {
     backgroundColor: colors.background.card,
-    borderRadius: radius.card,
     minHeight: 220,
     overflow: 'hidden',
   },
