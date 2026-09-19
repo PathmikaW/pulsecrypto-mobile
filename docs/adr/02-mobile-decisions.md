@@ -387,7 +387,7 @@ pulsecrypto-mobile/
 │   │   │   ├── useMarketData.ts           # useSyncExternalStore bridge, focus-gated — ADR-M11
 │   │   │   ├── usePairsMeta.ts            # TanStack Query for /pairs/meta
 │   │   │   └── useAppState.ts
-│   │   ├── api/                           # config.ts (env + https/wss production guard), httpClient.ts (axios), errors.ts (AppError),
+│   │   ├── api/                           # config.ts (env + https/wss production guard), apiClient.ts (axios instance), errors.ts (AppError),
 │   │   │                                  # retry.ts (REST retry policy), queryClient.ts — ADR-M12
 │   │   ├── i18n/                          # i18n.ts + locales/en/{common,watchlist,market-details,favourites}.json — ADR-M9
 │   │   ├── icons/                         # svgIcons.ts — vector paths exported from Figma
@@ -745,9 +745,10 @@ WS-driven or otherwise continuously-updating data must gate that subscription on
 | ky (fetch-based)                         | Small, retry built in                                                                                                                         | Less proven on React Native; its own retry would sit on top of TanStack Query's and multiply attempts       |
 | TanStack Query options only              | Nothing to add                                                                                                                                | Solves neither the missing timeout nor error normalization                                                  |
 
-**Decision.** axios, hidden behind a small client so nothing outside `core/api/` sees axios types, with one error model and one retry policy.
+**Decision.** axios as the only HTTP mechanism in the mobile app, configured once in `core/api/apiClient.ts` and used through the data layer, with one error model and one retry policy. _(v9.3: the first cut wrapped axios in a hand-written `HttpClient` interface with `createHttpClient` / `httpGet`. That was a second layer and a second vocabulary for one thing — the file was called `httpClient` while the library was axios — so it was removed. The module is now named for its role, not the library, and exports the configured axios instance itself.)_
 
-- **HTTP client** (`core/api/httpClient.ts`): `createHttpClient({ baseURL, timeoutMs = 10 000, adapter? })` returns an `HttpClient` with a single `get<T>(path, { signal })`. A response interceptor converts _every_ failure into an `AppError` before it leaves the module. The `adapter` option exists so tests can run the real client without a network.
+- **API client** (`core/api/apiClient.ts`): `createApiClient({ baseURL, timeoutMs = 10 000, adapter? })` returns a configured `AxiosInstance`, and `apiClient` is the app's single instance. A response interceptor converts _every_ failure into an `AppError` before it leaves the client, so callers never inspect axios errors. The `adapter` option exists so tests can run the real client without a network.
+- **Layer rule, enforced by ESLint** (`no-restricted-imports` in `eslint.config.js`): `axios` may be imported only under `src/core/api/`, and `apiClient` only by the data layer (`src/core/data/`). Features, presentation, hooks, the store and navigation cannot reach HTTP directly — they go through a data source (`RestSource`) exactly as they go through `MarketRepository` for the WebSocket. Verified by adding throwaway files that import `axios` from a feature and from `core/data`, and `apiClient` from a feature: all three were reported as errors, while `core/data` importing `apiClient` was not.
 - **Common error interface** (`core/api/errors.ts`): `AppErrorInfo { kind, message, status?, retryable, i18nKey }`, implemented by `AppError extends Error` (original error kept as `cause`). `toAppError(unknown)` is the only place that inspects axios or Zod errors:
 
   | Cause                                             | `kind`       | `retryable` | User message key                      |
@@ -768,7 +769,7 @@ The WebSocket path is unchanged in kind — its "error handling" is the reconnec
 
 **Verification (v9.2).**
 
-- Four new Jest suites (33 tests): `backoff`; `errors` (every row of the table above); `httpClient` driven through an injected adapter (URL/method/timeout, 503, network, timeout); and `retry`, including through a real `QueryClient` — a transient failure recovers after two retries, a persistent one stops after exactly four attempts, a 404 is attempted once. The suite was mutation-checked: making every error retryable and 404 retryable made three tests fail.
+- Four new Jest suites (33 tests): `backoff`; `errors` (every row of the table above); `apiClient` driven through an injected adapter (URL/method/timeout, 503, network, timeout); and `retry`, including through a real `QueryClient` — a transient failure recovers after two retries, a persistent one stops after exactly four attempts, a 404 is attempted once. The suite was mutation-checked: making every error retryable and 404 retryable made three tests fail.
 - On the Android Emulator against a fake backend that logged every request: `503, 503, 503, 200` → four requests and the data appears; persistent `503` → four requests, then it stops; persistent `404` → one request and the message "The request couldn't be completed." under the search field. On a warm app a pull-to-refresh produced retry gaps of 0.79 s, 1.22 s and 2.22 s — the 0.5/1/2 s backoff plus about 0.25 s of emulator request overhead. On a cold start the first gap was ≈1.2–1.6 s because the JS thread is busy starting up; the later gaps matched.
 - `expo export --platform android` bundles cleanly; `pnpm audit --prod` is unchanged by adding axios (the one moderate `uuid` advisory is the pre-existing Expo build-time transitive).
 
@@ -777,6 +778,7 @@ The WebSocket path is unchanged in kind — its "error handling" is the reconnec
 - One more dependency (axios `^1.20.0`, lockfile-pinned) and about 0.2 MB of bundle for behavior the platform `fetch` doesn't provide.
 - The policy is the default for _every_ query, which is correct while `/pairs/meta` is the only one; a future query that must not retry sets `retry: false` explicitly.
 - A screen mounting after a failure triggers a fresh attempt series (TanStack's `retryOnMount`) — accepted as sensible: opening a screen is a reasonable moment to try again.
+- The backend uses Node's built-in `fetch` for its own Binance calls (ADR-B3, ADR-B6). That is a separate runtime and codebase with its own ports (ADR-B7), not a second HTTP mechanism inside the mobile app; mobile uses axios for REST and the platform WebSocket for streaming, and nothing else.
 - The backend was not changed: Fastify already returns JSON errors, and a shared REST error envelope on the server side was not added. If more REST endpoints appear, defining one would make `AppError.i18nKey` mapping more precise than "status class".
 
 ---
