@@ -116,7 +116,8 @@ separation is structural, not something to be careful about by convention).
 
 ## REST failures and retry (ADR-M12)
 
-`GET /pairs/meta` goes through the axios `HttpClient` (`core/api/httpClient.ts`, 10 s timeout).
+`GET /pairs/meta` goes through the axios `apiClient` (`core/api/apiClient.ts`, 10 s timeout),
+used by `RestSource` in the data layer.
 Every failure is normalized to an `AppError` (`core/api/errors.ts`) carrying `kind`, optional
 `status`, a `retryable` flag and an i18n key. The single retry policy (`core/api/retry.ts`,
 wired in `queryClient.ts`) retries **only** retryable errors — no response, timeout, HTTP
