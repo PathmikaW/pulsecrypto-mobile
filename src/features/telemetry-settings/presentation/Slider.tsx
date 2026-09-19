@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors } from '../theme';
+import { colors } from '../../../core/theme';
 
 const TRACK_HEIGHT = 4;
 const THUMB_SIZE = 20;
@@ -15,13 +15,8 @@ interface SliderProps {
   accessibilityLabel?: string;
 }
 
-// @react-native-community/slider's native track has a fixed, non-stylable thickness and a
-// built-in inset around the thumb (to leave room for it at the extremes) that isn't exposed
-// as a style prop - this made the track both thinner than Figma and narrower than the
-// surrounding full-width content (the divider line below it), no matter how the wrapping
-// style was adjusted. A from-scratch control sidesteps both platform constraints entirely -
-// same rationale as Toggle - using PanResponder (core React Native, no new native
-// dependency) for the drag gesture and reanimated for the UI-thread thumb position.
+// From scratch because @react-native-community/slider's track thickness and thumb inset aren't stylable.
+// PanResponder drives the drag; reanimated positions the thumb on the UI thread.
 export function Slider({
   value,
   minimumValue,
@@ -61,22 +56,14 @@ export function Slider({
     thumbX.value = valueToX(value, width);
   };
 
-  // Keeps the thumb in sync when `value` changes from outside a drag (e.g. a parent reset)
-  // - doesn't fire from the drag's own onValueChange calls updating the same value, since
-  // this only reads the current width/value, it doesn't re-trigger the gesture.
+  // Syncs the thumb when `value` changes outside a drag (e.g. a parent reset).
   useEffect(() => {
     if (widthRef.current > 0) {
       thumbX.value = withTiming(valueToX(value, widthRef.current), { duration: 100 });
     }
   }, [value, thumbX, valueToX]);
 
-  // PanResponder's handlers are only ever invoked from real touch events, never during
-  // render - but the react-hooks/refs and react-hooks/immutability rules (React Compiler
-  // compatibility checks) can't see that; they flag any ref/shared-value read-or-write
-  // lexically inside a closure built during render, which is exactly what constructing a
-  // PanResponder requires. This is the same class of justified, targeted disable already
-  // used elsewhere in this app (e.g. AccountDrawer's set-state-in-effect) for an API whose
-  // actual execution timing the linter's static analysis can't follow.
+  // PanResponder handlers only run from touch events, never during render, which the React Compiler lint rules can't see.
   const panResponder = useMemo(
     () =>
       // eslint-disable-next-line react-hooks/refs -- only touched from handlers below, not during render
@@ -109,7 +96,6 @@ export function Slider({
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min: minimumValue, max: maximumValue, now: value }}
     >
-      {/* Uniform gray track, no filled portion - Figma only colors the thumb itself. */}
       <View style={styles.track} />
       {trackWidth > 0 && <Animated.View style={[styles.thumb, thumbStyle]} />}
     </View>
@@ -117,8 +103,7 @@ export function Slider({
 }
 
 const styles = StyleSheet.create({
-  // Taller than the visual track so the touch target stays comfortable even though the
-  // drawn bar itself is thin.
+  // Taller than the drawn bar to keep the touch target comfortable.
   hitArea: { height: THUMB_SIZE, justifyContent: 'center' },
   track: {
     height: TRACK_HEIGHT,
