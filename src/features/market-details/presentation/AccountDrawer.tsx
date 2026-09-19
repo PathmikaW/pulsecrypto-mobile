@@ -106,7 +106,7 @@ export function AccountDrawer() {
             <DrawerLink icon="drawerApiKeys" label={t('accountDrawer.apiKeys')} onPress={showComingSoon} />
             <DrawerLink icon="drawerSecurity" label={t('accountDrawer.security')} onPress={showComingSoon} />
 
-            <Text style={styles.groupLabel}>{t('accountDrawer.trading')}</Text>
+            <Text style={[styles.groupLabel, styles.tradingGroupLabel]}>{t('accountDrawer.trading')}</Text>
             <DrawerLink
               icon="drawerTradeHistory"
               label={t('accountDrawer.tradeHistory')}
@@ -188,27 +188,31 @@ const styles = StyleSheet.create({
   name: { color: colors.text.primary, ...typography.heading },
   tier: { color: colors.text.numeric, ...typography.bodySmall },
   tierId: { color: colors.signal.positive },
-  divider: { height: 1, backgroundColor: colors.background.divider, marginBottom: spacing.md },
+  divider: { height: 2, backgroundColor: colors.background.divider, marginBottom: spacing.md },
   // More vertical breathing room around each group - was flush against its links.
   groupLabel: {
     color: colors.text.label,
     ...typography.labelCaps,
     marginTop: spacing.lg,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
+  // Extra top margin for "TRADING" specifically, not "ACCOUNT" (which shouldn't move
+  // further from the divider above it) - separates it more from Security above it.
+  tradingGroupLabel: { marginTop: spacing.xxl },
   link: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
   },
   linkPressed: { backgroundColor: colors.signal.positiveDeep },
-  linkText: { color: colors.text.primary, ...typography.body },
+  // text.numeric (#C6C6CB) - verified value, not text.primary/white as tried earlier.
+  linkText: { color: colors.text.numeric, ...typography.body },
   signOutBorder: {
     marginTop: 'auto',
-    borderTopWidth: 1,
+    borderTopWidth: 2,
     borderTopColor: colors.background.divider,
     paddingTop: spacing.md,
     paddingHorizontal: spacing.lg,
@@ -222,5 +226,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
   },
-  signOutText: { color: colors.text.primary, ...typography.body },
+  // text.primary (#DBE3F4, already correct) at weight 700 - body's own font is Inter
+  // 400 Regular; a custom TTF loaded via useFonts() doesn't synthesize other weights from
+  // it, so getting real bold means switching fontFamily to the 700 weight's own font file,
+  // not just adding fontWeight on top of the regular one.
+  signOutText: {
+    color: colors.text.primary,
+    ...typography.body,
+    fontFamily: 'Inter_700Bold',
+    fontWeight: '700',
+  },
 });
