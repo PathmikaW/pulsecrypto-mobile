@@ -51,10 +51,14 @@ export const typography = {
   body: { fontFamily: 'Inter_400Regular', fontWeight: '400', fontSize: 14, lineHeight: 21 },
   bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: '400', fontSize: 12, lineHeight: 16.8 },
   heading: { fontFamily: 'HankenGrotesk_600SemiBold', fontWeight: '600', fontSize: 20, lineHeight: 28 },
+  // Corrected against a value manually pulled from Figma's Inspect panel (Hanken Grotesk,
+  // weight 600, 24px, line-height 31.2px, letter-spacing 0) - was 700/32/38.4, guessed
+  // before that value was available. Only used by TelemetryScreen's page heading.
   headingLarge: {
-    fontFamily: 'HankenGrotesk_700Bold',
-    fontWeight: '700',
-    fontSize: 32,
-    lineHeight: 38.4,
+    fontFamily: 'HankenGrotesk_600SemiBold',
+    fontWeight: '600',
+    fontSize: 24,
+    lineHeight: 31.2,
+    letterSpacing: 0,
   },
 } as const;

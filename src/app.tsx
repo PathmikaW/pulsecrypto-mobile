@@ -5,7 +5,6 @@ import { useFonts } from 'expo-font';
 // which Metro then bundles regardless of which named exports are actually used. Each
 // subpath's own index.js requires only that one file (ADR-M10 perf pass).
 import { HankenGrotesk_600SemiBold } from '@expo-google-fonts/hanken-grotesk/600SemiBold';
-import { HankenGrotesk_700Bold } from '@expo-google-fonts/hanken-grotesk/700Bold';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
 import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { JetBrainsMono_400Regular } from '@expo-google-fonts/jetbrains-mono/400Regular';
@@ -48,7 +47,6 @@ export default function App() {
     Inter_400Regular,
     Inter_700Bold,
     HankenGrotesk_600SemiBold,
-    HankenGrotesk_700Bold,
   });
 
   useEffect(() => {

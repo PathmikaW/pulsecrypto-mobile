@@ -7,6 +7,7 @@ import { Toggle } from '../../../core/components/Toggle';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
 const MIN_FREQUENCY_MS = 10;
+const MID_FREQUENCY_MS = 500;
 const MAX_FREQUENCY_MS = 1000;
 const DEFAULT_FREQUENCY_MS = 250;
 
@@ -27,7 +28,7 @@ export function DataThrottlingCard() {
           <Text style={styles.eyebrow}>{t('telemetry.networkControl')}</Text>
           <Text style={styles.heading}>{t('telemetry.dataThrottling')}</Text>
         </View>
-        <Icon name="dataThrottlingGauge" size={20} color={colors.text.numeric} />
+        <Icon name="dataThrottlingGauge" size={26} color={colors.text.numeric} />
       </View>
 
       <View style={styles.sliderSection}>
@@ -42,12 +43,16 @@ export function DataThrottlingCard() {
           step={10}
           value={frequencyMs}
           onValueChange={setFrequencyMs}
-          minimumTrackTintColor={colors.signal.positive}
+          // Figma's track is a uniform gray bar with no "filled" portion - only the thumb
+          // is colored. minimumTrackTintColor matches maximumTrackTintColor instead of
+          // the signal green (was: a green fill from the left edge to the thumb).
+          minimumTrackTintColor={colors.background.divider}
           maximumTrackTintColor={colors.background.divider}
           thumbTintColor={colors.signal.positive}
         />
         <View style={styles.sliderBounds}>
           <Text style={styles.boundLabel}>{`${MIN_FREQUENCY_MS}ms`}</Text>
+          <Text style={styles.boundLabel}>{`${MID_FREQUENCY_MS}ms`}</Text>
           <Text style={styles.boundLabel}>{`${MAX_FREQUENCY_MS}ms`}</Text>
         </View>
       </View>

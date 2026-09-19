@@ -41,7 +41,7 @@ export function PerformanceDashboardCard() {
       </View>
 
       <View style={styles.counterSection}>
-        <Icon name="wsIngestion" size={20} color={colors.signal.negativeMuted} />
+        <Icon name="wsIngestion" size={30} color={colors.signal.negativeMuted} />
         <Text style={styles.counterValue}>{messageRate}</Text>
         <Text style={styles.counterUnit}>{t('telemetry.msgsPerSec')}</Text>
         <Text style={styles.metricLabel}>{t('telemetry.wsIngestionRate')}</Text>
