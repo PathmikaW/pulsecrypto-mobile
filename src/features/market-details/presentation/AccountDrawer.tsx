@@ -107,7 +107,6 @@ export function AccountDrawer() {
               icon="drawerTradeHistory"
               label={t('accountDrawer.tradeHistory')}
               onPress={showComingSoon}
-              active
             />
             <DrawerLink icon="drawerSupport" label={t('accountDrawer.support')} onPress={showComingSoon} />
           </View>
@@ -124,22 +123,34 @@ export function AccountDrawer() {
   );
 }
 
+// The green highlight is a press-feedback state, not a permanent "selected" one - an
+// earlier reading of Figma's pressed-state variant for "Trade History" mistook it for the
+// link's default/resting appearance. All four links behave identically; none is
+// permanently highlighted. Padding is fixed between states - only the background color
+// changes, so nothing shifts position when pressed.
 function DrawerLink({
   icon,
   label,
-  active,
   onPress,
 }: {
   icon: SvgIconName;
   label: string;
-  active?: boolean;
   onPress: (label: string) => void;
 }) {
-  const tintColor = active ? colors.signal.positiveMuted : colors.text.numeric;
   return (
-    <Pressable style={[styles.link, active && styles.linkActive]} onPress={() => onPress(label)}>
-      <Icon name={icon} size={16} color={tintColor} />
-      <Text style={[styles.linkText, active && { color: tintColor }]}>{label}</Text>
+    <Pressable
+      style={({ pressed }) => [styles.link, pressed && styles.linkPressed]}
+      onPress={() => onPress(label)}
+    >
+      {({ pressed }) => {
+        const tintColor = pressed ? colors.signal.positiveMuted : colors.text.numeric;
+        return (
+          <>
+            <Icon name={icon} size={16} color={tintColor} />
+            <Text style={[styles.linkText, pressed && { color: tintColor }]}>{label}</Text>
+          </>
+        );
+      }}
     </Pressable>
   );
 }
@@ -181,7 +192,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
   },
-  linkActive: { backgroundColor: colors.signal.positiveDeep },
+  linkPressed: { backgroundColor: colors.signal.positiveDeep },
   linkText: { color: colors.text.primary, ...typography.body },
   signOutBorder: {
     marginTop: 'auto',

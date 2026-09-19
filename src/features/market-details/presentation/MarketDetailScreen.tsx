@@ -150,7 +150,11 @@ export function MarketDetailScreen({ route }: Props) {
 
             <View style={styles.depthPanel}>
               <MarketDepthChart />
-              <View style={styles.depthHeaderRow}>
+
+              {/* Top-left block: title, then bullets inline beside each other on the next
+              line - matches Figma exactly (was: bullets stacked vertically, split to the
+              right of the title). */}
+              <View style={styles.depthTopLeft}>
                 <Text style={styles.depthTitle}>{t('marketDepth')}</Text>
                 {liquidityGap && (
                   <View style={styles.depthBullets}>
@@ -175,8 +179,11 @@ export function MarketDetailScreen({ route }: Props) {
                   </View>
                 )}
               </View>
+
+              {/* Bottom-right floating box, not full width - matches Figma exactly (was:
+              a full-width box in normal flow below the header). */}
               <View style={styles.depthLegendBox}>
-                <View style={styles.statRow}>
+                <View style={styles.depthStatRow}>
                   <StatCell
                     label={t('liquidityGap')}
                     value={
@@ -188,6 +195,7 @@ export function MarketDetailScreen({ route }: Props) {
                     }
                     valueColor={liquidityGapColor}
                   />
+                  <View style={styles.depthStatDivider} />
                   <StatCell
                     label={t('pressureLabel')}
                     value={pressureLabel ?? '—'}
@@ -257,20 +265,23 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
-    padding: spacing.lg,
     minHeight: 220,
     overflow: 'hidden',
-    justifyContent: 'space-between',
   },
-  depthHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  depthTopLeft: { position: 'absolute', top: spacing.lg, left: spacing.lg, gap: spacing.sm },
   depthTitle: { color: colors.text.label, ...typography.labelCaps },
-  depthBullets: { gap: spacing.xs },
+  depthBullets: { flexDirection: 'row', gap: spacing.md },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
   depthLegendBox: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    right: spacing.lg,
     backgroundColor: 'rgba(11,20,32,0.75)',
     borderRadius: radius.card,
     padding: spacing.md,
   },
+  depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  depthStatDivider: { width: 1, height: 32, backgroundColor: colors.background.divider },
 });
