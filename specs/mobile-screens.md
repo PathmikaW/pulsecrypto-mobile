@@ -113,12 +113,12 @@ top where Figma only shows a qualitative equivalent:**
   connected), not a separate ad hoc component.
 - **Price Ticker Section:** current price (`PriceText`, `type.priceDisplay`, flash green/red
   on change per ADR-M4), 24h % change, and three stat cells — Figma shows 24H High / 24H
-  Low / Market Cap. **The assignment doesn't ask for Market Cap and doesn't provide it via
-  `/pairs/meta`** (which returns High/Low/Volume, not market cap — see `api-contract.md`).
-  Render 24H High and 24H Low as designed; **replace the Market Cap cell with 24H Volume**
-  (the actual field the backend provides), keeping the same visual treatment — a Figma
-  label swap, not a layout change, and a defensible call since "Market Cap" has no backing
-  data source in this system at all.
+  Low / Market Cap. **The assignment doesn't ask for Market Cap and Binance's `ticker/24hr`
+  has no such field.** _(Revised in v9.1 — this spec originally said to replace the cell with
+  24H Volume; that is not what was built.)_ All three cells are rendered as designed. Market
+  Cap is fed by `PairMeta.marketCap`, a static placeholder (`MARKET_CAP_PLACEHOLDER`) the
+  backend returns for every pair — display-only, in the same category as the Telemetry
+  screen's static values (ADR-M10). `volume24h` stays in `/pairs/meta` but isn't shown here.
 - **Spread, Buy Pressure, Sell Pressure:** not shown numerically anywhere in the Figma
   mock — the closest equivalent is the Market Depth panel's qualitative
   `Pressure: Sell Heavy` / `Liquidity Gap: Low (0.02%)` legend. Since the assignment
@@ -249,7 +249,9 @@ this section is the fallback for anything the mockup doesn't cover, not a compet
   not from `/pairs/meta`) — metadata fields that depend on the REST call
   (`displayName`, `tradingStatus`) degrade to the raw symbol string rather than blocking
   the whole row. This keeps the watchlist's live-data promise intact even if the REST path
-  is down.
+  is down. The failed request is retried per ADR-M12 (only retryable errors, at most 3 times,
+  exponential backoff with jitter); once retries are exhausted a localized error line
+  (`common:errors.*`) appears under the search field.
 - **Market Details opened for a pair with no order book data yet** (just navigated, first
   snapshot hasn't arrived): `OrderBookView` shows a loading state, not an empty book
   rendered as if it were real (ties back to the "don't display the defensive `spread: 0`

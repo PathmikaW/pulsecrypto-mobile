@@ -6,6 +6,7 @@ translation, proving the mechanism end-to-end.
 ## Setup
 
 `core/i18n/i18n.ts`:
+
 ```typescript
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
@@ -38,6 +39,7 @@ function resolveInitialLocale(): string {
 ## Namespace files (initial English content — extend as screens are built)
 
 `core/i18n/locales/en/common.json`:
+
 ```json
 {
   "connection": {
@@ -51,6 +53,7 @@ function resolveInitialLocale(): string {
 ```
 
 `core/i18n/locales/en/watchlist.json`:
+
 ```json
 {
   "title": "Market Watchlist",
@@ -60,6 +63,7 @@ function resolveInitialLocale(): string {
 ```
 
 `core/i18n/locales/en/market-details.json`:
+
 ```json
 {
   "currentPrice": "Current Price",
@@ -72,6 +76,7 @@ function resolveInitialLocale(): string {
 ```
 
 `core/i18n/locales/en/favourites.json`:
+
 ```json
 {
   "addFavourite": "Add to favourites",
@@ -101,6 +106,7 @@ next launch, per `resolveInitialLocale()` above.
 ## Number & date formatting — locale-aware by construction
 
 `core/utils/formatPrice.ts`:
+
 ```typescript
 export function formatPrice(value: number, locale: string): string {
   return new Intl.NumberFormat(locale, {
@@ -113,6 +119,7 @@ export function formatPrice(value: number, locale: string): string {
 ```
 
 `core/utils/formatPercent.ts`:
+
 ```typescript
 export function formatPercent(value: number, locale: string): string {
   return new Intl.NumberFormat(locale, {
