@@ -299,19 +299,21 @@ const styles = StyleSheet.create({
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   bulletDot: { width: 6, height: 6, borderRadius: 3 },
   bulletText: { color: colors.text.primary, ...typography.bodySmall },
-  // Flush against the panel's true bottom-right corner (bottom/right: 0, not an inset
-  // offset) - the box's own margin from the edge was repeatedly misread as the whole
-  // panel having a right-side gap, since it sits exactly where that corner gets checked.
-  // Breathing room from the panel edge now comes from its own padding, not a position
-  // offset, and only the top-left corner rounds (the other three coincide with the
-  // panel's own square corners, so rounding them would cut a visible notch there).
+  // Reverted back to a genuinely floating inset card (all 4 corners rounded, margin from
+  // both edges) after a high-res reference confirmed this was correct all along - the
+  // "flush corner" change in the prior round was wrong; the reported right-side gap was
+  // never this box, and remains unresolved as a separate issue on the panel itself.
+  // Solid card background + a subtle border, not a dark translucent overlay - was too
+  // close to black to read as a distinct card against the wave behind it.
   depthLegendBox: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(11,20,32,0.85)',
-    borderTopLeftRadius: radius.card,
-    padding: spacing.md,
+    bottom: spacing.lg,
+    right: spacing.lg,
+    backgroundColor: colors.background.card,
+    borderWidth: 1,
+    borderColor: colors.background.divider,
+    borderRadius: radius.card,
+    padding: spacing.lg,
   },
   depthStatRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   depthStatDivider: { width: 1, height: 32, backgroundColor: colors.background.divider },
