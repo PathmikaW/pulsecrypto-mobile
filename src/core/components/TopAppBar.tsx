@@ -20,7 +20,7 @@ export function TopAppBar({ title }: TopAppBarProps) {
   const openDrawer = useUiStore((state) => state.openDrawer);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.md }]}>
       <Pressable onPress={openDrawer} hitSlop={12} accessibilityLabel={t('common:menu')}>
         <Icon name="menu" size={22} color={colors.signal.positive} />
       </Pressable>
@@ -45,8 +45,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
+    paddingBottom: spacing.md,
+    gap: spacing.lg,
     // Hairline under the header row, separating it from the screen's content below -
     // Figma shows this on both Terminal and Telemetry.
     borderBottomWidth: 1,
