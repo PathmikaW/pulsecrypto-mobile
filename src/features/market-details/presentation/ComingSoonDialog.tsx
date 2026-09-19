@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
-const ANIMATION_DURATION_MS = 150;
+// 90ms, opacity-only: fast enough to read as instant while still avoiding a hard pop-in
+// flash. A scale transform was tried and dropped - even at a short duration, a growing
+// card reads as "still settling in" after it's already fully opaque, which is exactly the
+// kind of lag this is meant to eliminate. One shared opacity value drives the whole
+// overlay (backdrop + card fade together as a single unit) rather than two independently
+// animated styles, so there's no risk of them drifting out of sync with each other either.
+const ANIMATION_DURATION_MS = 90;
 
 interface ComingSoonDialogProps {
   visible: boolean;
@@ -24,7 +30,6 @@ interface ComingSoonDialogProps {
 export function ComingSoonDialog({ visible, title, body, confirmLabel, onDismiss }: ComingSoonDialogProps) {
   const [isMounted, setIsMounted] = useState(false);
   const opacity = useSharedValue(0);
-  const scale = useSharedValue(0.92);
 
   if (visible && !isMounted) {
     setIsMounted(true);
@@ -33,33 +38,30 @@ export function ComingSoonDialog({ visible, title, body, confirmLabel, onDismiss
   useEffect(() => {
     if (visible) {
       opacity.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
-      scale.value = withTiming(1, { duration: ANIMATION_DURATION_MS });
     } else if (isMounted) {
       opacity.value = withTiming(0, { duration: ANIMATION_DURATION_MS }, (finished) => {
         if (finished) runOnJS(setIsMounted)(false);
       });
-      scale.value = withTiming(0.92, { duration: ANIMATION_DURATION_MS });
     }
     // Deps intentionally `[visible]`-only - same one-shot-transition-handler reasoning as
     // AccountDrawer's own effect (see that file).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const cardStyle = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   if (!isMounted) return null;
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, overlayStyle]}>
       <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} accessibilityLabel={confirmLabel} />
-      <Animated.View style={[styles.card, cardStyle]} accessibilityRole="alert">
+      <View style={styles.card} accessibilityRole="alert">
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.body}>{body}</Text>
         <Pressable style={styles.confirmButton} onPress={onDismiss}>
           <Text style={styles.confirmText}>{confirmLabel}</Text>
         </Pressable>
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 }
