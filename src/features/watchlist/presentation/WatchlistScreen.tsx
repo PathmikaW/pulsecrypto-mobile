@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
@@ -16,6 +16,7 @@ type Navigation = BottomTabNavigationProp<RootStackParamList>;
 export function WatchlistScreen() {
   const { t } = useTranslation('watchlist');
   const navigation = useNavigation<Navigation>();
+  const isFocused = useIsFocused();
   const { rows, searchQuery, setSearchQuery, toggleFavourite, refetch, isRefetching } = useWatchlist();
 
   const handlePairPress = useCallback(
@@ -25,9 +26,14 @@ export function WatchlistScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: WatchlistRow }) => (
-      <PairRow row={item} onPress={handlePairPress} onToggleFavourite={toggleFavourite} />
+      <PairRow
+        row={item}
+        onPress={handlePairPress}
+        onToggleFavourite={toggleFavourite}
+        isFocused={isFocused}
+      />
     ),
-    [handlePairPress, toggleFavourite]
+    [handlePairPress, toggleFavourite, isFocused]
   );
 
   return (

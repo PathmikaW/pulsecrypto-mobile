@@ -15,14 +15,19 @@ interface PairRowProps {
   row: WatchlistRow;
   onPress: (pair: TradingPairSymbol) => void;
   onToggleFavourite: (pair: TradingPairSymbol) => void;
+  // Bottom Tabs keeps Watchlist mounted once visited even while another tab is active -
+  // without this, every visible row kept re-subscribing to its own pair's WS-driven
+  // updates (and re-rendering) while nobody could see the list at all. See the identical
+  // reasoning on MarketDetailScreen/useMarketData.
+  isFocused: boolean;
 }
 
 // React.memo + a per-pair Zustand-backed subscription (useMarketData) so recycling and
 // selector-scoping work together (ADR-M3): a price update to one pair only re-renders its
 // own row, not the whole list.
-function PairRowComponent({ row, onPress, onToggleFavourite }: PairRowProps) {
+function PairRowComponent({ row, onPress, onToggleFavourite, isFocused }: PairRowProps) {
   const { t } = useTranslation('favourites');
-  const marketData = useMarketData(row.symbol);
+  const marketData = useMarketData(row.symbol, { enabled: isFocused });
 
   return (
     <Pressable style={styles.row} onPress={() => onPress(row.symbol)}>

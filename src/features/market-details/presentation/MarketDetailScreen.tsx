@@ -1,4 +1,5 @@
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import { useIsFocused } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { memo, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,7 +56,14 @@ export function MarketDetailScreen({ route }: Props) {
   useEffect(() => {
     if (pair) setSelectedPair(pair);
   }, [pair, setSelectedPair]);
-  const marketData = useMarketData(pair ?? '');
+  // Bottom Tabs keeps this screen mounted once visited, even while another tab is active -
+  // without this, Terminal kept re-rendering its full tree (including OrderBookView's 20
+  // rows and a real BlurView redraw) on every ~100ms WS tick regardless of which tab the
+  // user was actually looking at, which was the dominant cause of the JS thread FPS drops
+  // reported live in Telemetry. Paused, not torn down - resumes showing live data the
+  // instant this tab regains focus, no extra resync needed (see useMarketData).
+  const isFocused = useIsFocused();
+  const marketData = useMarketData(pair ?? '', { enabled: isFocused });
   const baseAsset = useMemo(() => parseBaseAsset(meta?.displayName, pair ?? ''), [meta?.displayName, pair]);
 
   const pressureLabel =
