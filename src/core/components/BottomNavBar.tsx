@@ -2,32 +2,36 @@ import { useNavigation, useNavigationState } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { RootStackParamList } from '../../navigation/types';
+import type { SvgIconName } from '../icons/svgIcons';
 import { colors, spacing, typography } from '../theme';
+import { Icon } from './Icon';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type TabRoute = keyof RootStackParamList;
 
-const TABS: readonly { route: TabRoute; labelKey: string }[] = [
-  { route: 'Terminal', labelKey: 'nav.terminal' },
-  { route: 'Markets', labelKey: 'nav.markets' },
-  { route: 'Telemetry', labelKey: 'nav.telemetry' },
-  { route: 'Settings', labelKey: 'nav.settings' },
+const TABS: readonly { route: TabRoute; labelKey: string; icon: SvgIconName }[] = [
+  { route: 'Terminal', labelKey: 'nav.terminal', icon: 'navTerminal' },
+  { route: 'Markets', labelKey: 'nav.markets', icon: 'navMarkets' },
+  { route: 'Telemetry', labelKey: 'nav.telemetry', icon: 'navTelemetry' },
+  { route: 'Settings', labelKey: 'nav.settings', icon: 'navSettings' },
 ];
 
 // Four tabs, present on every screen (specs/mobile-screens.md) - Telemetry and Settings
-// both route to the same TelemetryScreen (ADR-M10). Styled with design-tokens.md's real
-// colors; the Figma-exact active-tab treatment (not confirmed in the API pull) is a visual
-// refinement to spot-check against the Figma node directly, not a functional gap.
+// both route to the same TelemetryScreen (ADR-M10). Active-tab color (green) verified
+// directly against the Figma file's own Terminal-tab-active state, not guessed.
 export function BottomNavBar() {
   const { t } = useTranslation();
   const navigation = useNavigation<Navigation>();
   const activeRoute = useNavigationState((state) => state.routes[state.index]?.name);
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
-      {TABS.map(({ route, labelKey }) => {
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      {TABS.map(({ route, labelKey, icon }) => {
         const isActive = activeRoute === route;
+        const tintColor = isActive ? colors.signal.positive : colors.text.numeric;
         return (
           <Pressable
             key={route}
@@ -36,6 +40,7 @@ export function BottomNavBar() {
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
           >
+            <Icon name={icon} size={20} color={tintColor} />
             <Text style={[styles.label, isActive && styles.labelActive]}>{t(labelKey)}</Text>
           </Pressable>
         );
@@ -51,7 +56,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.background.divider,
   },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
+  tab: { flex: 1, alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md },
   label: { color: colors.text.label, ...typography.labelCaps },
-  labelActive: { color: colors.text.primary },
+  labelActive: { color: colors.signal.positive },
 });

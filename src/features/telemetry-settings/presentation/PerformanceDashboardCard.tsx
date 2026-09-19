@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useMarketStore } from '../../../core/data/repositories/MarketRepository';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 import { CircularGauge } from './CircularGauge';
+import { MemorySparkline } from './MemorySparkline';
 import { useJsFps } from './useJsFps';
 
 const MAX_FPS = 60;
@@ -39,6 +41,9 @@ export function PerformanceDashboardCard() {
       </View>
 
       <View style={styles.counterSection}>
+        {/* Real Figma export still blocked by a persistent API rate limit - close Ionicons
+        stand-in for now, same swap-later approach as the throttling card's icon. */}
+        <Ionicons name="layers-outline" size={20} color={colors.signal.negativeMuted} />
         <Text style={styles.counterValue}>{messageRate}</Text>
         <Text style={styles.counterUnit}>{t('telemetry.msgsPerSec')}</Text>
         <Text style={styles.metricLabel}>{t('telemetry.wsIngestionRate')}</Text>
@@ -49,6 +54,7 @@ export function PerformanceDashboardCard() {
           <Text style={styles.metricLabel}>{t('telemetry.memoryFootprint')}</Text>
           <Text style={styles.memoryValue}>142.4 MB</Text>
         </View>
+        <MemorySparkline />
       </View>
     </View>
   );
@@ -100,7 +106,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     padding: spacing.lg,
     marginTop: spacing.xl,
+    gap: spacing.md,
   },
   memoryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  memoryValue: { color: colors.text.numeric, ...typography.tableValue },
+  memoryValue: { color: colors.signal.negativeMuted, ...typography.tableValue },
 });

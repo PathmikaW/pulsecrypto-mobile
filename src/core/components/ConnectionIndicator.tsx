@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { useMarketStore } from '../data/repositories/MarketRepository';
@@ -11,8 +12,10 @@ const STATUS_COLOR = {
 } as const;
 
 // Reflects the single global connection state (ADR-M7) — never a per-row state. Owned by
-// `useWebSocket`, read here via `marketStore.connectionStatus`.
-export function ConnectionIndicator() {
+// `useWebSocket`, read here via `marketStore.connectionStatus`. Memoized (takes no props)
+// since it's rendered on every screen and would otherwise re-render on every parent tick
+// even though its own selector rarely changes.
+function ConnectionIndicatorComponent() {
   const { t } = useTranslation();
   const status = useMarketStore((state) => state.connectionStatus);
 
@@ -23,6 +26,8 @@ export function ConnectionIndicator() {
     </View>
   );
 }
+
+export const ConnectionIndicator = memo(ConnectionIndicatorComponent);
 
 const styles = StyleSheet.create({
   container: {

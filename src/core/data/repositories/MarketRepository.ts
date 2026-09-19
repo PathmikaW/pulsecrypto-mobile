@@ -1,10 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { mmkvStorage } from '../../storage/mmkv';
+import { createThrottledStorage, mmkvStorage } from '../../storage/mmkv';
 import type { MarketData } from '../../domain/models/MarketData';
 import type { TradingPairSymbol } from '../../domain/models/TradingPair';
 import type { IMarketRepository, Unsubscribe } from '../../domain/repositories/IMarketRepository';
 import type { ConnectionStatus } from '../sources/WebSocketSource';
+
+// The MMKV cache only needs to be reasonably fresh for the next cold launch (ADR-M5), not
+// disk-synced on every ~100ms WS tick — throttling the persisted write is a real
+// performance win at this update cadence (see createThrottledStorage's own comment).
+const PERSIST_THROTTLE_MS = 2000;
 
 interface MarketState {
   pairs: Record<TradingPairSymbol, MarketData>;
@@ -32,7 +37,7 @@ export const useMarketStore = create<MarketState>()(
     }),
     {
       name: 'market-data-storage',
-      storage: createJSONStorage(() => mmkvStorage),
+      storage: createJSONStorage(() => createThrottledStorage(mmkvStorage, PERSIST_THROTTLE_MS)),
       partialize: (state) => ({ pairs: state.pairs }),
     }
   )

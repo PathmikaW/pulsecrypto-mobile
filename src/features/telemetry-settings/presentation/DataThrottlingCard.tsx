@@ -1,7 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Toggle } from '../../../core/components/Toggle';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
 const MIN_FREQUENCY_MS = 10;
@@ -20,8 +22,16 @@ export function DataThrottlingCard() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.eyebrow}>{t('telemetry.networkControl')}</Text>
-      <Text style={styles.heading}>{t('telemetry.dataThrottling')}</Text>
+      <View style={styles.headingRow}>
+        <View>
+          <Text style={styles.eyebrow}>{t('telemetry.networkControl')}</Text>
+          <Text style={styles.heading}>{t('telemetry.dataThrottling')}</Text>
+        </View>
+        {/* Figma has a small gauge/speedometer icon here - export still blocked by a
+        persistent Figma API rate limit; using a close Ionicons stand-in so the layout is
+        correct now, swap for the real exported icon once the API is available again. */}
+        <Ionicons name="speedometer-outline" size={20} color={colors.text.numeric} />
+      </View>
 
       <View style={styles.sliderSection}>
         <View style={styles.sliderHeader}>
@@ -29,6 +39,7 @@ export function DataThrottlingCard() {
           <Text style={styles.value}>{`${frequencyMs}ms`}</Text>
         </View>
         <Slider
+          style={styles.slider}
           minimumValue={MIN_FREQUENCY_MS}
           maximumValue={MAX_FREQUENCY_MS}
           step={10}
@@ -46,20 +57,18 @@ export function DataThrottlingCard() {
 
       <View style={styles.toggleRow}>
         <Text style={styles.toggleLabel}>{t('telemetry.binaryProtocolCompression')}</Text>
-        <Switch
+        <Toggle
           value={compressionEnabled}
           onValueChange={setCompressionEnabled}
-          trackColor={{ false: colors.background.divider, true: colors.signal.positive }}
-          thumbColor="#FFFFFF"
+          accessibilityLabel={t('telemetry.binaryProtocolCompression')}
         />
       </View>
       <View style={styles.toggleRow}>
         <Text style={styles.toggleLabel}>{t('telemetry.adaptivePollingStrategy')}</Text>
-        <Switch
+        <Toggle
           value={adaptivePolling}
           onValueChange={setAdaptivePolling}
-          trackColor={{ false: colors.background.divider, true: colors.signal.positive }}
-          thumbColor="#FFFFFF"
+          accessibilityLabel={t('telemetry.adaptivePollingStrategy')}
         />
       </View>
     </View>
@@ -68,9 +77,11 @@ export function DataThrottlingCard() {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.background.card, borderRadius: radius.card, padding: spacing.lg },
+  headingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   eyebrow: { color: colors.signal.positive, ...typography.labelCaps },
   heading: { color: colors.text.primary, ...typography.heading, marginTop: spacing.xs },
   sliderSection: { marginTop: spacing.lg },
+  slider: { width: '100%', height: 32 },
   sliderHeader: { flexDirection: 'row', justifyContent: 'space-between' },
   label: { color: colors.text.label, ...typography.bodySmall },
   value: { color: colors.signal.positive, ...typography.tableValueLarge },

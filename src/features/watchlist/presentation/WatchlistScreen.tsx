@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 import { BottomNavBar } from '../../../core/components/BottomNavBar';
+import { TopAppBar } from '../../../core/components/TopAppBar';
 import { colors, spacing, typography } from '../../../core/theme';
 import type { RootStackParamList } from '../../../navigation/types';
 import { PairRow } from './PairRow';
@@ -32,7 +33,7 @@ export function WatchlistScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('title')}</Text>
+      <TopAppBar title={t('title')} />
       <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
       <View style={styles.listContainer}>
         <FlashList
@@ -52,6 +53,5 @@ export function WatchlistScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
   listContainer: { flex: 1 },
-  title: { color: colors.text.primary, ...typography.heading, padding: spacing.lg },
   empty: { color: colors.text.label, textAlign: 'center', marginTop: spacing.xxl, ...typography.body },
 });
