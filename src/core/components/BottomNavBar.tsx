@@ -33,20 +33,23 @@ export function BottomNavBar() {
         const isActive = activeRoute === route;
         const tintColor = isActive ? colors.signal.positive : colors.text.numeric;
         return (
-          <Pressable
-            key={route}
-            style={styles.tab}
-            onPress={() => navigation.navigate(route)}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: isActive }}
-          >
-            {/* Active tab gets a pill background behind icon+label, not just a color
-            change - matches Figma's active tab state. */}
-            <View style={[styles.tabContent, isActive && styles.tabContentActive]}>
+          <View key={route} style={styles.tab}>
+            {/* The Pressable IS the rounded pill (not a plain rectangular Pressable
+            wrapping a separately-rounded inner View) - Android's ripple clips to
+            whichever node hosts it, so putting the radius on a different element than
+            the Pressable showed a square ripple flash before the rounded pill appeared.
+            android_ripple is themed green instead of the OS default gray. */}
+            <Pressable
+              style={[styles.tabContent, isActive && styles.tabContentActive]}
+              onPress={() => navigation.navigate(route)}
+              android_ripple={{ color: `${colors.signal.positive}40`, borderless: false }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
               <Icon name={icon} size={20} color={tintColor} />
               <Text style={[styles.label, isActive && styles.labelActive]}>{t(labelKey)}</Text>
-            </View>
-          </Pressable>
+            </Pressable>
+          </View>
         );
       })}
     </View>
@@ -65,8 +68,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     borderRadius: radius.pill,
+    overflow: 'hidden',
   },
   // A translucent tint of colors.signal.positive (same box/glyph relationship as the
   // Telemetry micro-cards), not the near-black positiveMuted solid - that read as barely
