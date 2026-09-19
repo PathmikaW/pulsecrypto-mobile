@@ -56,6 +56,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "check:contracts": "curl -sf https://raw.githubusercontent.com/PathmikaW/pulsecrypto-backend/develop/contracts/schemas.ts | diff - src/contracts/schemas.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "format": "prettier --write .",
