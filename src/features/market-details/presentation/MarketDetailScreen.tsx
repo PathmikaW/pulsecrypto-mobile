@@ -153,6 +153,7 @@ export function MarketDetailScreen({ route }: Props) {
                     styles.changeInline,
                     { color: marketData.change24h < 0 ? colors.signal.negative : colors.signal.positive },
                   ]}
+                  numberOfLines={1}
                 >
                   {`${marketData.change24h < 0 ? '▼' : '▲'} ${formatPercent(Math.abs(marketData.change24h), i18n.language)}`}
                 </Text>
@@ -307,7 +308,10 @@ const styles = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   // Was tableValueSmall (10px/10 line-height) with an ad-hoc fontSize:14 override that left
   // the line-height too tight for the larger size - tableValue is the real 14px/14 token.
-  changeInline: { ...typography.tableValue },
+  // flexShrink: 0 - was wrapping onto a second line ("4.15%" dropping below the "▲") when
+  // the row ran short on width, since RN will shrink/wrap a Text's own content by default
+  // rather than let it overflow; numberOfLines={1} on the Text itself is the other half.
+  changeInline: { ...typography.tableValue, flexShrink: 0 },
   statRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, marginTop: spacing.lg, gap: spacing.xl },
   priceStatsRow: { flexDirection: 'row', marginTop: spacing.lg, gap: spacing.xl },
   // No flex:1: sized to content, matching Figma's tightly-packed columns instead of
