@@ -1,5 +1,4 @@
-// Verified via Figma's REST API (specs/design-tokens.md) — real auto-layout
-// padding/itemSpacing values, not estimated from bounding boxes.
+// Verified via Figma's REST API (specs/design-tokens.md).
 
 export const spacing = {
   xs: 4,

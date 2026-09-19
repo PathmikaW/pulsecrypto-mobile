@@ -9,8 +9,7 @@ interface FavouritesState {
   toggleFavourite: (pair: TradingPairSymbol) => void;
 }
 
-// MMKV-persisted (ADR-M5) — synchronous reads mean favourites render correctly on the
-// very first frame, no flash of an incorrect state while an async read resolves.
+// MMKV-persisted (ADR-M5); synchronous reads render favourites correctly on the first frame.
 export const useFavouritesStore = create<FavouritesState>()(
   persist(
     (set, get) => ({
@@ -31,8 +30,7 @@ export const useFavouritesStore = create<FavouritesState>()(
   )
 );
 
-// Promise-based facade satisfying IFavouritesRepository — stays inside favourites/, since
-// nothing outside this feature reads or writes favourites directly (ADR-M8).
+// Promise-based facade for IFavouritesRepository; stays inside favourites/ (ADR-M8).
 export const favouritesRepository: IFavouritesRepository = {
   getAll: async () => useFavouritesStore.getState().favourites,
   toggle: async (pair) => {

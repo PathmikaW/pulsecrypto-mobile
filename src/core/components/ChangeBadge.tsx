@@ -7,8 +7,6 @@ interface ChangeBadgeProps {
   changePercent: number;
 }
 
-// 24h change pill — colored by sign (green/red, ADR-M4's signal tokens), shared between
-// the watchlist row and the detail screen.
 export function ChangeBadge({ changePercent }: ChangeBadgeProps) {
   const { i18n } = useTranslation();
   const isPositive = changePercent >= 0;

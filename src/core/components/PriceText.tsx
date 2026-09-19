@@ -8,28 +8,18 @@ import { formatPrice } from '../utils/formatPrice';
 interface PriceTextProps {
   value: number;
   style?: TextStyle;
-  /** When provided, the text's steady-state color reflects this sign (green/red) instead
-   * of the default primary color — matches Figma's Terminal "LAST PRICE" treatment, which
-   * colors the price itself by 24h direction, not just a separate badge next to it. Omit
-   * for contexts (e.g. watchlist rows) that don't use this treatment. */
+  /** Colors the steady-state text by sign (green/red); omit where that treatment isn't used. */
   changePercent?: number;
 }
 
 const FLASH_DURATION_MS = 400;
 
-// Flashes green on increase, red on decrease (ADR-M4) — a background overlay animated on
-// the UI thread via a worklet, so the flash stays smooth independent of JS-thread load at
-// a 100ms update cadence. The overlay's opacity animates, not the text's own opacity, so
-// the price stays fully legible throughout the flash.
+// The flash overlay animates on the UI thread; its opacity animates, not the text's, so the price stays legible (ADR-M4).
 export function PriceText({ value, style, changePercent }: PriceTextProps) {
   const { i18n } = useTranslation();
   const previousValue = useRef(value);
   const flashOpacity = useSharedValue(0);
-  // A shared value, not React state - flash direction only ever needs to be read inside
-  // the worklet below. Routing it through useState instead would re-render this component
-  // on the JS thread on every single price tick (every watchlist row + the Terminal price,
-  // at a 100ms broadcast cadence) purely to recolor a UI-thread-animated overlay that
-  // doesn't need React to re-render at all.
+  // Shared value, not state: the direction is only read in the worklet, and state would re-render every row per tick.
   const isUpFlash = useSharedValue(true);
 
   const steadyStateColor =

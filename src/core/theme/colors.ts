@@ -1,4 +1,4 @@
-// Verified via Figma's REST API (specs/design-tokens.md) — not visually approximated.
+// Verified via Figma's REST API (specs/design-tokens.md).
 
 export const colors = {
   background: {
@@ -24,7 +24,6 @@ export const colors = {
     negativeMuted: '#FFB2BA',
   },
   border: {
-    // The Market Depth panel's floating Liquidity Gap/Pressure overlay's border.
     depthLegend: '#45474B',
   },
 } as const;

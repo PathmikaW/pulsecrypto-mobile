@@ -7,9 +7,7 @@ interface IconProps {
   color: string;
 }
 
-// Renders one of the real Figma-exported vector icons (svgIcons.ts) at a given size/color
-// — the color is applied here, not baked into the path, so the same shape covers both
-// active/inactive states (e.g. BottomNavBar) without needing a second export.
+// Color is applied at render time, not baked into the path, so one shape covers active and inactive states.
 export function Icon({ name, size = 24, color }: IconProps) {
   const icon = svgIcons[name];
   const [, , viewWidth, viewHeight] = icon.viewBox.split(' ').map(Number);

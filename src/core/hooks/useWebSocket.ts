@@ -8,30 +8,18 @@ import type { MarketData } from '../domain/models/MarketData';
 import type { TradingPairSymbol } from '../domain/models/TradingPair';
 import { useAppState } from './useAppState';
 
-// Mirrors the backend's own MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS (ADR-B4
-// defaults: 10 * 100ms) — kept as a named derivation, not an unrelated magic number, so
-// the two can't silently drift apart if the backend's tuning ever changes (ADR-M6).
+// Derived from the backend's MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS so the two can't drift apart (ADR-M6).
 const MAX_CONSECUTIVE_SKIPS = 10;
 const BROADCAST_INTERVAL_MS = 100;
 const STALE_CONNECTION_TIMEOUT_MS = MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS;
 
-/**
- * Owns the WebSocket connection lifecycle (ADR-M6): connects on mount, validates every
- * incoming message against the mirrored contract schema before applying it to
- * `marketStore`, and tears down on unmount. No ping/pong — broadcast cadence itself is the
- * liveness signal.
- */
+/** Owns the WS connection lifecycle (ADR-M6): validates each message against the mirrored contract before applying it. */
 export function useWebSocket(): void {
   const sourceRef = useRef<WebSocketSource | null>(null);
   const appState = useAppState();
 
   useEffect(() => {
-    // The backend's conflation tick broadcasts ~8 near-simultaneous per-pair messages back
-    // to back. Applying each with its own updatePair() was up to 8 separate set() calls /
-    // React commits per tick - a real, measured source of the reported FPS drops under live
-    // traffic. Instead, buffer parsed updates and commit them all in a single updatePairs()
-    // call once per animation frame, so a full broadcast tick is at most one re-render pass
-    // (ADR-M10 perf pass).
+    // A broadcast tick delivers ~8 per-pair messages back to back; buffer them and commit once per animation frame so a tick is at most one render pass (ADR-M10).
     const pendingUpdates = new Map<TradingPairSymbol, MarketData>();
     let flushHandle: number | null = null;
 

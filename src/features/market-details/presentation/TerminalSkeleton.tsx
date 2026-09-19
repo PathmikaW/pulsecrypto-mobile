@@ -27,13 +27,7 @@ function SkeletonBlock({ style }: { style: ViewStyle }) {
   return <Animated.View style={[styles.block, style, animatedStyle]} />;
 }
 
-// Shown wherever MarketDetailScreen would otherwise be waiting on data with nothing to show
-// (no pair resolved yet on a cold launch with the backend unreachable, or a pair resolved
-// but its first WS tick hasn't arrived) - shaped like the real layout instead of a bare
-// spinner, so the screen never looks broken/stuck while genuinely just waiting. Both REST
-// (/pairs/meta) and the WS connection retry indefinitely on their own (TanStack Query's
-// default retry, ADR-M6's uncapped exponential backoff), so this resolves on its own the
-// moment either source succeeds - no manual restart needed.
+// Shaped like the real layout instead of a spinner while waiting on data; REST and WS retry on their own, so it resolves without a manual restart (ADR-M6).
 export const TerminalSkeleton = memo(function TerminalSkeleton() {
   return (
     <View style={styles.container}>

@@ -9,15 +9,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, radius, spacing, typography } from '../../../core/theme';
 
-// A pure opacity-only fade (no scale) was tried and reverted - a dialog card that just
-// flatly appears with no motion at all reads as visually "off"/glitchy, worse than the
-// small delay it was meant to fix. Fade duration stays fast (120ms, down from the original
-// 150ms) so opening doesn't read as delayed.
 const ANIMATION_DURATION_MS = 120;
-// The open scale uses a spring, not withTiming - a linear/eased timing curve reads as
-// mechanical for a "pop in" motion. dampingRatio just under 1 (slightly underdamped) gives
-// a natural, smooth settle with a touch of give at the end instead of a hard stop, without
-// enough overshoot to look bouncy/playful for what's still a plain dialog.
+// Spring scale, slightly underdamped: a natural settle without looking bouncy.
 const OPEN_SCALE_SPRING = { duration: 260, dampingRatio: 0.85 };
 
 interface ComingSoonDialogProps {
@@ -28,14 +21,7 @@ interface ComingSoonDialogProps {
   onDismiss: () => void;
 }
 
-// Replaces the native Alert.alert() previously used for the drawer's placeholder links.
-// Alert.alert opens a real native dialog (a genuine OS window on Android) that's always
-// styled in the OS's own light theme - it clashed hard against this app's dark UI. This is
-// a plain reanimated-driven overlay instead: themed to match the rest of the app, and
-// never leaves the JS/UI-thread render path, so it opens exactly as fast as the drawer
-// itself. Same render-phase mount pattern as AccountDrawer's own open-lag fix (mount
-// synchronously during render, not from inside an effect) - deliberately reused here so
-// this dialog doesn't reintroduce the same one-tick delay.
+// Themed replacement for Alert.alert, which always renders in the OS light theme. Mounts during render like AccountDrawer to avoid a one-tick open delay.
 export function ComingSoonDialog({ visible, title, body, confirmLabel, onDismiss }: ComingSoonDialogProps) {
   const [isMounted, setIsMounted] = useState(false);
   const opacity = useSharedValue(0);
@@ -55,8 +41,7 @@ export function ComingSoonDialog({ visible, title, body, confirmLabel, onDismiss
       });
       scale.value = withTiming(0.92, { duration: ANIMATION_DURATION_MS });
     }
-    // Deps intentionally `[visible]`-only - same one-shot-transition-handler reasoning as
-    // AccountDrawer's own effect (see that file).
+    // Deps are [visible] only: a one-shot transition handler, same as AccountDrawer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 

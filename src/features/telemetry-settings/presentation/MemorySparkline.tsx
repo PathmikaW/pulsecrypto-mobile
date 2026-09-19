@@ -5,10 +5,7 @@ import { colors } from '../../../core/theme';
 const WIDTH = 300;
 const HEIGHT = 60;
 
-// Static, decorative sparkline shape matching Figma's memory-footprint chart — there is no
-// cheap RN API for real historical process-memory samples, so this is a display-only
-// visual, same treatment as the Memory Footprint value itself and the three micro-cards
-// (ADR-M10). Not real data - documented in the README as intentionally static.
+// Static, decorative shape: no cheap RN API exposes historical process memory (ADR-M10).
 const POINTS: readonly number[] = [42, 38, 40, 30, 34, 22, 26, 16, 20, 10, 14, 4, 8, 2];
 
 function buildLinePath(): string {
@@ -20,9 +17,7 @@ function buildAreaPath(): string {
   return `${buildLinePath()} L ${WIDTH} ${HEIGHT} L 0 ${HEIGHT} Z`;
 }
 
-// Computed once at module load, not per-render — this shape is 100% static, but its parent
-// card re-renders every second (the WS message-rate counter), so without memoization these
-// path strings would be rebuilt for no reason on every one of those renders.
+// Computed once at module load; the parent re-renders every second and would otherwise rebuild these strings.
 const AREA_PATH = buildAreaPath();
 const LINE_PATH = buildLinePath();
 

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 
-// Real JS-thread frame rate via requestAnimationFrame — cheap to measure, no native module
-// needed (ADR-M10: metrics that ARE cheaply real, like this one, get wired to actual
-// values rather than a static number).
+// JS-thread FPS via requestAnimationFrame; cheap and needs no native module (ADR-M10).
 export function useJsFps(): number {
   const [fps, setFps] = useState(60);
 
