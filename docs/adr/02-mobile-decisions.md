@@ -103,7 +103,7 @@
 
 1. Cell recycling is the property that matters under sustained update bursts, and it scales the same whether the list has five rows or eight.
 2. Combined with `React.memo` on row components and Zustand's selector pattern (ADR-M2), only the row whose underlying data actually changed re-renders — the recycling and the selector-scoping work together, not independently.
-3. Rather than cite an unverified performance multiplier, the actual measured difference will be profiled during the performance-hardening phase (Phase 5) and reported in the README with real numbers from this specific app, not a generic claim.
+3. Rather than cite an unverified performance multiplier, this ADR originally promised a measured FlashList-vs-FlatList comparison. **That comparison was not performed (v9.1 correction).** Performance was instead validated on the running app: the in-app JS-thread FPS gauge (ADR-M10) read 55 FPS on the Android Emulator (Pixel 8, API 35) during live updates across eight pairs, after the fixes in ADR-M4 and ADR-M11. The recycling benefit is argued from FlashList's documented behavior, not measured here.
 
 **Maintenance continuity, noted transparently.** FlashList was built and has primarily been maintained by Shopify. As part of its 2026 move away from React Native (see ADR-M1), Shopify has announced it is winding down its sponsorship of related open-source projects, including FlashList, by the end of the year. This does not change the technical recommendation — FlashList remains the strongest available option for this use case, and the library continues to function — but it is a maintenance-continuity risk worth monitoring, and it's stated here, consistently with ADR-M1, rather than left unmentioned in one place and disclosed in another.
 
@@ -173,32 +173,46 @@ and is easy to miss in review since the component still visibly "looks" UI-threa
 3. **Performance headroom:** the roughly 30x read/write speed advantage over AsyncStorage is not strictly necessary for a small favourites array, but it is the correct default for any state that will be read synchronously on every app launch, and it costs nothing extra to choose it here.
 
 ```typescript
-// favouritesStore.ts
+// features/favourites/data/FavouritesRepository.ts
 export const useFavouritesStore = create<FavouritesState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       favourites: [],
-      toggleFavourite: (pair) => set(...),
+      toggleFavourite: (pair) => {
+        /* add or remove the symbol */
+      },
     }),
     { name: 'favourites-storage', storage: createJSONStorage(() => mmkvStorage) }
   )
 );
 
-// marketStore.ts — caches last known state so the app never shows an empty screen on launch
+// core/data/repositories/MarketRepository.ts — caches last known state so the app never shows an empty screen on launch
 export const useMarketStore = create<MarketState>()(
   persist(
     (set) => ({
-      pairs: { ... },
-      updatePair: (pair, data) => set(...),
+      pairs: {},
+      connectionStatus: 'connecting',
+      wsMessageRate: 0,
+      updatePair: (pair, data) => {
+        /* ... */
+      },
+      updatePairs: (updates) => {
+        /* one set() for a whole broadcast tick */
+      },
+      // ...
     }),
     {
       name: 'market-data-storage',
-      storage: createJSONStorage(() => mmkvStorage),
+      // trailing-edge throttled writes (core/storage/mmkv.ts) — persist would otherwise serialize
+      // every pair's full order book on each ~100ms tick
+      storage: createJSONStorage(() => createThrottledStorage(mmkvStorage, PERSIST_THROTTLE_MS)),
       partialize: (state) => ({ pairs: state.pairs }),
     }
   )
 );
 ```
+
+`react-native-mmkv` v4 is a Nitro-modules rewrite: the instance is created with `createMMKV(config)`, not `new MMKV(config)` as older docs and earlier drafts of this ADR showed.
 
 **An edge case worth naming here, resolved fully in ADR-M8.** Because the backend's additional (non-required) pairs are resolved dynamically (ADR-B3), a pair a user has favourited can, in principle, fall outside the backend's currently tracked set after a restart if its liquidity ranking has changed. This does not corrupt the favourites list — it's simply symbols — but it does need explicit UI handling, specified in full under ADR-M8.
 
@@ -218,7 +232,7 @@ export const useMarketStore = create<MarketState>()(
 | A third-party reconnection library | Some behavior provided out of the box                     | Generally browser-focused, limited configurability for RN-specific concerns like app backgrounding |
 | **Custom hook**                    | Full control, tailored to React Native's runtime behavior | More code to write and maintain                                                                    |
 
-**Decision.** A custom `useWebSocket` hook.
+**Decision.** A custom `useWebSocket` hook, backed by a framework-agnostic `WebSocketSource` class (`core/data/sources/WebSocketSource.ts`) that owns the connection state machine — so backoff, silence detection and app-state handling are unit-testable without React or a real socket. The hook (`core/hooks/useWebSocket.ts`) only wires the source to the store.
 
 **Options considered — connection liveness detection specifically:**
 
@@ -229,10 +243,10 @@ export const useMarketStore = create<MarketState>()(
 
 **Features.**
 
-- Exponential backoff with jitter (1s → 2s → 4s → 8s, capped at 30s) for reconnection attempts.
-- Liveness via broadcast silence, not a separate heartbeat: `STALE_CONNECTION_TIMEOUT_MS` (default ~1000ms, deliberately documented as roughly `MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS` — the same multiple of the broadcast interval the backend itself uses in ADR-B4 to decide a client has fallen behind) — if no message arrives within that window, the connection is treated as dead and reconnection begins.
+- Exponential backoff with ±20% jitter (1s → 2s → 4s → 8s, capped at 30s) for reconnection attempts, computed by the shared `computeBackoffMs` (`core/utils/backoff.ts`, also used by the REST retry policy — ADR-M12).
+- Liveness via broadcast silence, not a separate heartbeat: `STALE_CONNECTION_TIMEOUT_MS` (1000ms, computed in `useWebSocket.ts` as `MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS` = 10 × 100ms — the same multiple of the broadcast interval the backend itself uses in ADR-B4 to decide a client has fallen behind; the two inputs are duplicated as constants in the mobile code, since the mobile app has no access to the backend's env, so a backend retune must be mirrored by hand) — if no message arrives within that window, the connection is treated as dead and reconnection begins.
 - App-state awareness — the connection is paused when the app is backgrounded and re-established on foreground, rather than reconnecting uselessly while the app isn't visible.
-- An explicit connection-status enum: `CONNECTING | CONNECTED | DISCONNECTED | RECONNECTING`.
+- An explicit connection-status union: `'connecting' | 'connected' | 'disconnected' | 'reconnecting'` (lowercase string literals in the code).
 
 **Rationale.**
 
@@ -317,6 +331,8 @@ useEffect(() => {
 }, [connectionStatus]);
 ```
 
+_(The snippet above is illustrative pseudocode of the flow. The implementation is the `WebSocketSource` state machine (ADR-M6) writing into `marketStore`; verified end-to-end on the Android Emulator in v9.1 — stopping the backend showed "RECONNECTING…" with every row's last price still on screen, and restarting it returned the indicator to "LIVE" with no user action.)_
+
 **Rationale.** This satisfies the assignment's stated requirement directly, and the MMKV-cached last-known-state addition is a small amount of extra value (no empty screen on cold launch) for very little additional complexity, since the persistence mechanism already exists for favourites (ADR-M5).
 
 **Trade-offs accepted.** Displayed data can be stale during a disconnection — mitigated by the always-visible connection-status indicator, which is the assignment's own stated mechanism for surfacing this to the user.
@@ -343,91 +359,76 @@ A shared layer inside an otherwise feature-first structure is not a contradictio
 
 ```text
 pulsecrypto-mobile/
-├── android/                       # Generated by expo prebuild — not committed (ADR-M1)
-├── ios/                           # Generated by expo prebuild — not committed
+├── android/                          # Generated by expo prebuild — gitignored, not committed (ADR-M1)
+├── ios/                              # Generated by expo prebuild — gitignored, not committed
 ├── src/
-│   ├── contracts/                 # Mirrored copy of the backend repo's contracts/ — see ADR-X1.
-│   │   └── schemas.ts               # CI diff-checks this against the backend's raw GitHub URL on every build.
-│   ├── core/                      # Deliberately small — only what 2+ features genuinely need
+│   ├── contracts/
+│   │   └── schemas.ts                # Byte-identical mirror of the backend's contracts/schemas.ts (ADR-X1);
+│   │                                 # `pnpm run check:contracts` diffs it against the backend on demand
+│   ├── core/                         # Deliberately small — what 2+ features need, plus app-wide infrastructure
 │   │   ├── domain/
-│   │   │   ├── models/
-│   │   │   │   ├── MarketData.ts          # includes lastUpdatedAt — ADR-B4, ADR-M2, §12
-│   │   │   │   ├── OrderBook.ts
-│   │   │   │   └── TradingPair.ts
+│   │   │   ├── models/               # MarketData.ts (incl. lastUpdatedAt), OrderBook.ts, TradingPair.ts
 │   │   │   └── repositories/
-│   │   │       └── IMarketRepository.ts   # subscription-based — see interface spec below.
-│   │   │                                   # Lives in core/, not in one feature, because both
-│   │   │                                   # `watchlist` and `market-details` depend on it.
+│   │   │       └── IMarketRepository.ts   # subscription-based — see interface spec below
 │   │   ├── data/
 │   │   │   ├── repositories/
-│   │   │   │   └── MarketRepository.ts     # implements IMarketRepository — the shared, WS-backed
-│   │   │   │                                # live data source
+│   │   │   │   └── MarketRepository.ts    # Zustand store (useMarketStore) + the IMarketRepository facade
 │   │   │   ├── sources/
-│   │   │   │   ├── WebSocketSource.ts
-│   │   │   │   └── RestSource.ts
+│   │   │   │   ├── WebSocketSource.ts     # connection state machine — ADR-M6
+│   │   │   │   └── RestSource.ts          # /pairs/meta fetch, parsed against the contract schema
 │   │   │   └── mappers/
-│   │   │       └── MarketDataMapper.ts     # DTO → domain model
-│   │   ├── components/                     # Shared, presentation-only components — no feature-specific logic
-│   │   │   ├── PriceText.tsx                # animated price, used on both watchlist rows and detail screen
-│   │   │   ├── ChangeBadge.tsx               # 24h change pill, same reuse
-│   │   │   ├── ConnectionIndicator.tsx
-│   │   │   ├── LastUpdatedLabel.tsx          # renders MarketData.lastUpdatedAt — required field, §12
-│   │   │   └── UntrackedFavouriteBadge.tsx   # see behavior spec below
-│   │   ├── i18n/                             # Localization — see ADR-M9
-│   │   │   ├── i18n.ts                        # i18next init, device-locale detection, MMKV override lookup
-│   │   │   └── locales/
-│   │   │       └── en/
-│   │   │           ├── common.json             # shared strings: connection states, generic labels
-│   │   │           ├── watchlist.json
-│   │   │           ├── market-details.json
-│   │   │           └── favourites.json
-│   │   ├── theme/                            # Design tokens, colors, typography
-│   │   ├── utils/                            # formatPrice, formatPercent — locale-aware via Intl (ADR-M9)
-│   │   ├── api/                               # Base HTTP client, WebSocket client construction
-│   │   ├── hooks/                             # Generic, non-feature-specific hooks
-│   │   │   ├── useWebSocket.ts                 # the raw connection hook — see ADR-M6
+│   │   │       └── MarketDataMapper.ts    # wire payload -> domain model
+│   │   ├── components/                    # Shared, presentation-only
+│   │   │   ├── PriceText.tsx, ChangeBadge.tsx, LastUpdatedLabel.tsx   # used by watchlist and market-details
+│   │   │   ├── ConnectionIndicator.tsx, UntrackedFavouriteBadge.tsx
+│   │   │   └── TopAppBar.tsx, BottomNavBar.tsx, Icon.tsx, ErrorBoundary.tsx   # app-wide chrome
+│   │   ├── hooks/
+│   │   │   ├── useWebSocket.ts            # wires WebSocketSource to the store — ADR-M6
+│   │   │   ├── useMarketData.ts           # useSyncExternalStore bridge, focus-gated — ADR-M11
+│   │   │   ├── usePairsMeta.ts            # TanStack Query for /pairs/meta
 │   │   │   └── useAppState.ts
-│   │   └── storage/                            # MMKV configuration and storage adapter
-│   ├── features/                               # Domain-driven feature modules — feature-owned by default
-│   │   ├── watchlist/
-│   │   │   ├── presentation/
-│   │   │   │   ├── WatchlistScreen.tsx          # composes core/data's MarketRepository +
-│   │   │   │   │                                 # favourites/'s public useFavourites() — see behavior spec
-│   │   │   │   ├── PairRow.tsx                   # composes core/components (PriceText, ChangeBadge, etc.)
-│   │   │   │   ├── SearchBar.tsx
-│   │   │   │   └── useWatchlist.ts
-│   │   │   └── index.ts                          # barrel export — this feature's public surface (currently none
-│   │   │                                          # needed by other features; kept for consistency)
-│   │   ├── market-details/
-│   │   │   ├── presentation/
-│   │   │   │   ├── MarketDetailScreen.tsx
-│   │   │   │   └── OrderBookView.tsx
+│   │   ├── api/                           # config.ts (env + https/wss production guard), httpClient.ts (axios), errors.ts (AppError),
+│   │   │                                  # retry.ts (REST retry policy), queryClient.ts — ADR-M12
+│   │   ├── i18n/                          # i18n.ts + locales/en/{common,watchlist,market-details,favourites}.json — ADR-M9
+│   │   ├── icons/                         # svgIcons.ts — vector paths exported from Figma
+│   │   ├── assets/                        # images.ts — registry for raster assets
+│   │   ├── storage/                       # mmkv.ts — MMKV instance, StateStorage adapter, throttled writes
+│   │   ├── theme/                         # colors, spacing, typography, radius — from specs/design-tokens.md
+│   │   └── utils/                         # formatPrice, formatPercent, formatCompactNumber, formatPairDisplayName,
+│   │                                      # parseBaseAsset, intlFormatterCache — locale-aware via Intl (ADR-M9);
+│   │                                      # backoff.ts — shared exponential-backoff arithmetic (ADR-M12)
+│   ├── features/                          # Feature-owned by default
+│   │   ├── watchlist/                     # the "Markets" screen
+│   │   │   ├── presentation/              # WatchlistScreen, PairRow, SearchBar, useWatchlist
 │   │   │   └── index.ts
-│   │   └── favourites/                            # Genuinely feature-scoped — no other feature reads or
-│   │       │                                        # writes favourites data directly
-│   │       ├── domain/
-│   │       │   └── IFavouritesRepository.ts         # see interface spec below
-│   │       ├── data/
-│   │       │   └── FavouritesRepository.ts           # MMKV-backed, implements IFavouritesRepository
-│   │       ├── presentation/
-│   │       │   └── useFavourites.ts                   # toggle logic, exposed via the barrel below
-│   │       └── index.ts                                # exports useFavourites() — the ONLY way another
-│   │                                                    # feature is permitted to touch favourites state
+│   │   ├── market-details/                # the "Terminal" screen and the account drawer
+│   │   │   ├── presentation/              # MarketDetailScreen, OrderBookView, MarketDepthChart, TerminalSkeleton,
+│   │   │   │                              # AccountDrawer, ComingSoonDialog
+│   │   │   └── index.ts
+│   │   ├── telemetry-settings/            # the "Telemetry & Settings" screen (ADR-M10)
+│   │   │   ├── presentation/              # TelemetryScreen, PerformanceDashboardCard, DataThrottlingCard, MicroCard,
+│   │   │   │                              # CircularGauge, MemorySparkline, Slider, Toggle, useJsFps
+│   │   │   └── index.ts
+│   │   └── favourites/                    # Genuinely feature-scoped — reached only through its barrel
+│   │       ├── domain/IFavouritesRepository.ts
+│   │       ├── data/FavouritesRepository.ts     # MMKV-backed, implements IFavouritesRepository
+│   │       ├── presentation/useFavourites.ts
+│   │       └── index.ts                          # exports useFavourites() — the ONLY cross-feature entry point
 │   ├── store/
-│   │   └── uiStore.ts                                  # cross-feature global UI state only: isOnline,
-│   │                                                     # activeTab, activeLocale — deliberately minimal,
-│   │                                                     # same discipline as core/
-│   ├── navigation/
-│   │   ├── AppNavigator.tsx
-│   │   └── types.ts
-│   └── app.tsx                                           # Entry point, providers (QueryClientProvider,
-│                                                            # I18nextProvider, etc.)
-├── assets/
-├── app.json
-├── tsconfig.json
-├── package.json
-└── README.md
+│   │   └── uiStore.ts                    # cross-feature UI state only: isDrawerOpen, selectedPair
+│   ├── navigation/                       # AppNavigator.tsx (Bottom Tabs — ADR-M11), types.ts
+│   └── app.tsx                           # providers (QueryClient, ErrorBoundary, i18n), font loading, drawer mount
+├── index.ts                              # entry point (package.json "main")
+├── tests/unit/                           # Jest — see §8
+├── __mocks__/                            # react-native-mmkv mock
+├── specs/, docs/adr/                     # spec-driven inputs; mirror of the project-level ADR
+├── assets/, app.json, eas.json, babel.config.js, eslint.config.js, commitlint.config.cjs, .husky/
+└── tsconfig.json, package.json, README.md
 ```
+
+_(v9.1: the tree above replaces the original design tree with the structure that was actually built. Differences worth knowing: `telemetry-settings/` did not exist in the original tree (ADR-M10); `Slider` and `Toggle` live in it rather than in `core/`, per the two-or-more-features test; `useMarketData`, `usePairsMeta`, `RestSource` and the app-chrome components were added under `core/`; `uiStore` holds `isDrawerOpen` and `selectedPair` — the `isOnline`, `activeTab` and `activeLocale` fields the original design listed were never used and were removed.)_
+
+**A deliberate, narrow exception to "presentation depends on the interface, not the store" (v9.1 disclosure).** Per-pair live data always reaches components through `IMarketRepository` (via `useMarketData`). Three things do not: `useWatchlist` reads the store's pair _keys_ directly, because `IMarketRepository` has no reactive "list of keys" method and the watchlist must stay populated from live/cached data when `/pairs/meta` is down; and `TelemetryScreen`, `PerformanceDashboardCard` and `MarketDetailScreen` read `connectionStatus`/`wsMessageRate`/cached pairs from `useMarketStore` directly. These import `useMarketStore` from `core/data/repositories/` — presentation reaching into `core/data`, which ADR-M8's letter discourages. It is accepted because widening the interface for three read-only, non-pair-scoped values would add ceremony without protecting anything, and it stays inside `core/` (never another feature's internals).
 
 **Repository interfaces, shaped to match real behavior:**
 
@@ -493,7 +494,7 @@ export interface IFavouritesRepository {
 
 - `core/i18n/i18n.ts` initializes `i18next`, detects the device's locale via `expo-localization` at launch, and falls back to English if the device locale has no corresponding translation namespace.
 - Translation files are namespaced per feature (`common.json`, `watchlist.json`, `market-details.json`, `favourites.json`), mirroring the codebase's own feature-first structure (ADR-M8) — a contributor or translator finds a screen's strings exactly where the screen's code lives conceptually, rather than in one large undifferentiated file.
-- A manual language override, when the user explicitly picks a language rather than relying on device locale, is persisted in MMKV via the same mechanism already used for favourites (ADR-M5) — reusing an existing, proven pattern rather than introducing a second persistence approach for a single settings value.
+- A manual language override is read from MMKV at startup (`language-override` key, `core/i18n/i18n.ts`) ahead of the device locale. **Only the read side exists (v9.1 correction):** there is no in-app language picker and nothing writes that key today, so the override is wiring for a future second language rather than a user-facing feature. It reuses the MMKV mechanism from ADR-M5 rather than adding a second persistence approach.
 - **Number and date formatting is locale-aware by construction, not just the label text around it.** `core/utils/formatPrice.ts` and `formatPercent.ts` (already part of the structure per ADR-M8) use `Intl.NumberFormat` with the active locale, since thousands separators and decimal points are not universal (`1,234.56` vs. `1.234,56`); `LastUpdatedLabel`'s timestamp rendering uses `Intl.DateTimeFormat` for the same reason. Localizing only the static labels while leaving number formatting hardcoded to one convention would be an incomplete implementation of the same idea.
 
 **Rationale.**
@@ -506,6 +507,7 @@ export interface IFavouritesRepository {
 **Trade-offs accepted.**
 
 - One additional dependency and a small amount of upfront setup (provider wiring, the `core/i18n/` module) for an app that, strictly by the assignment's own requirements, only needs to render in one language.
+- The verification described in the original delivery plan — rendering key screens under a non-English locale in component tests, to catch hardcoded strings — has **not** been done: the mobile suite is Jest unit tests only (see §8's status note). Every screen does route its text through `t()`; that is verified by inspection, not by test.
 - Shipping only English initially means the localization story right now is about correct infrastructure — the mechanism, the formatting discipline, the namespace structure — rather than about actual translated content in multiple languages, and the README should state that distinction plainly rather than imply broader language coverage than exists.
 
 ---
@@ -552,9 +554,12 @@ specifies.** Concretely:
   assignment's required numeric fields Figma doesn't show — Buy Pressure %, Sell Pressure
   %, Spread, Last Updated Timestamp — are added onto this screen using the same
   typography/spacing system, since the assignment's requirement doesn't bend to the
-  mockup's omission of it. The "Market Cap" ticker cell is replaced with "24H Volume" (the
-  field the backend's `/pairs/meta` actually provides — ADR-B6); the assignment doesn't
-  ask for market cap, and no data source in this system provides it.
+  mockup's omission of it. The "Market Cap" ticker cell is **kept as designed** (corrected in
+  v9.1 — an earlier draft of this ADR replaced it with "24H Volume"). It is fed by a static
+  placeholder: Binance's `ticker/24hr` has no market-cap field, so the backend returns a fixed
+  `MARKET_CAP_PLACEHOLDER` in `PairMeta.marketCap`, the same display-only category as the
+  Telemetry values below. `volume24h` and `tradingStatus` remain in `/pairs/meta` but are not
+  shown on Terminal — the assignment doesn't ask for them on any screen.
 - `Markets` = the assignment's "Market Watchlist" screen (+ Search, + Favourites), designed
   fresh using the extracted color/type/spacing tokens (ADR-M10, `design-tokens.md`) since
   no Figma frame exists to build it against.
@@ -718,5 +723,60 @@ remount lag it replaces. **Standing obligation, stated explicitly so it isn't re
 the hard way again:** any future screen added to this navigator that subscribes to
 WS-driven or otherwise continuously-updating data must gate that subscription on
 `useIsFocused()` the same way, or it will silently reintroduce this exact class of bug.
+
+---
+
+### ADR-M12: HTTP Client, Common Error Model and Retry Policy — axios (v9.2)
+
+**Context.** Through v9.1 the app's only REST call (`GET /pairs/meta`) went through a hand-written `fetch` wrapper that threw a plain `Error`. A review of the mobile error handling against the assignment's "appropriate error handling" and "robust connection handling" requirements found five gaps:
+
+1. **No timeout.** `fetch` has none, so a stalled connection left the request pending indefinitely and the retry logic never got a failure to act on.
+2. **Untyped errors.** Callers could not tell a dropped connection from a 404 from a payload that failed the contract schema.
+3. **Indiscriminate retry.** TanStack Query's default (three retries) retried _everything_ — including a 404 or a schema-validation failure, which fail identically every time.
+4. **Two private backoff implementations.** The WebSocket client had its own backoff arithmetic; REST had TanStack's default curve.
+5. **Invisible failures.** A failed `/pairs/meta` refresh showed nothing to the user except, on Terminal's cold-start waiting state, a bare Retry button.
+
+**Options considered:**
+
+| Option                                   | Pros                                                                                                                                          | Cons                                                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Keep `fetch`, extend the wrapper by hand | No new dependency                                                                                                                             | Timeout via `AbortController`, error normalization and interceptors all reimplemented and re-tested by hand |
+| **axios**                                | Built-in timeout, interceptors, `AbortSignal` cancellation, a reliable `isAxiosError` / error `code` taxonomy; ubiquitous and well understood | One more dependency; about +0.2 MB in the Android bundle (4.7 → 4.9 MB, measured)                           |
+| ky (fetch-based)                         | Small, retry built in                                                                                                                         | Less proven on React Native; its own retry would sit on top of TanStack Query's and multiply attempts       |
+| TanStack Query options only              | Nothing to add                                                                                                                                | Solves neither the missing timeout nor error normalization                                                  |
+
+**Decision.** axios, hidden behind a small client so nothing outside `core/api/` sees axios types, with one error model and one retry policy.
+
+- **HTTP client** (`core/api/httpClient.ts`): `createHttpClient({ baseURL, timeoutMs = 10 000, adapter? })` returns an `HttpClient` with a single `get<T>(path, { signal })`. A response interceptor converts _every_ failure into an `AppError` before it leaves the module. The `adapter` option exists so tests can run the real client without a network.
+- **Common error interface** (`core/api/errors.ts`): `AppErrorInfo { kind, message, status?, retryable, i18nKey }`, implemented by `AppError extends Error` (original error kept as `cause`). `toAppError(unknown)` is the only place that inspects axios or Zod errors:
+
+  | Cause                                             | `kind`       | `retryable` | User message key                      |
+  | ------------------------------------------------- | ------------ | ----------- | ------------------------------------- |
+  | No response (connection refused, DNS, offline)    | `network`    | yes         | `errors.network`                      |
+  | `ECONNABORTED` / `ETIMEDOUT`                      | `timeout`    | yes         | `errors.timeout`                      |
+  | HTTP 408, 425, 429, 500, 502, 503, 504            | `http`       | yes         | `errors.server` (5xx) / `errors.http` |
+  | Any other HTTP status (400, 401, 403, 404, 422 …) | `http`       | no          | `errors.http`                         |
+  | Response failed the contract schema (`ZodError`)  | `validation` | no          | `errors.validation`                   |
+  | Aborted request                                   | `cancelled`  | no          | `errors.cancelled`                    |
+  | Anything else                                     | `unknown`    | no          | `errors.unknown`                      |
+
+- **Retry policy** (`core/api/retry.ts`, wired into `core/api/queryClient.ts`): retry only when `AppError.retryable`, at most `MAX_RETRIES = 3` times (so 1 + 3 attempts), with exponential backoff 500 ms → 1 s → 2 s (cap 8 s), ±20% jitter. The arithmetic is the shared `computeBackoffMs` (`core/utils/backoff.ts`), which `WebSocketSource` now also uses with its own 1 s → 30 s parameters — one implementation, two parameter sets, no behavior change on the WebSocket side. Retry lives in exactly **one** layer (the query), deliberately not also in axios: stacking an axios retry under TanStack's would multiply attempts (`3 × 3`) and make timing unpredictable.
+- **Validation and cancellation:** `RestSource` parses the body with `safeParse` and throws a `validation` `AppError`; `usePairsMeta` passes TanStack's `AbortSignal` through to axios so an unmounted or superseded query cancels its request.
+- **User-facing surface:** the `common:errors.*` strings (localized per ADR-M9) appear in red once retries are exhausted — under the search field on Markets, and in Terminal's waiting state. While retries are in flight with no earlier data, TanStack Query keeps `error` empty, so nothing flashes.
+
+The WebSocket path is unchanged in kind — its "error handling" is the reconnect state machine and the Zod drop-and-log of malformed messages (ADR-M6); only the backoff arithmetic is shared.
+
+**Verification (v9.2).**
+
+- Four new Jest suites (33 tests): `backoff`; `errors` (every row of the table above); `httpClient` driven through an injected adapter (URL/method/timeout, 503, network, timeout); and `retry`, including through a real `QueryClient` — a transient failure recovers after two retries, a persistent one stops after exactly four attempts, a 404 is attempted once. The suite was mutation-checked: making every error retryable and 404 retryable made three tests fail.
+- On the Android Emulator against a fake backend that logged every request: `503, 503, 503, 200` → four requests and the data appears; persistent `503` → four requests, then it stops; persistent `404` → one request and the message "The request couldn't be completed." under the search field. On a warm app a pull-to-refresh produced retry gaps of 0.79 s, 1.22 s and 2.22 s — the 0.5/1/2 s backoff plus about 0.25 s of emulator request overhead. On a cold start the first gap was ≈1.2–1.6 s because the JS thread is busy starting up; the later gaps matched.
+- `expo export --platform android` bundles cleanly; `pnpm audit --prod` is unchanged by adding axios (the one moderate `uuid` advisory is the pre-existing Expo build-time transitive).
+
+**Trade-offs accepted.**
+
+- One more dependency (axios `^1.20.0`, lockfile-pinned) and about 0.2 MB of bundle for behavior the platform `fetch` doesn't provide.
+- The policy is the default for _every_ query, which is correct while `/pairs/meta` is the only one; a future query that must not retry sets `retry: false` explicitly.
+- A screen mounting after a failure triggers a fresh attempt series (TanStack's `retryOnMount`) — accepted as sensible: opening a screen is a reasonable moment to try again.
+- The backend was not changed: Fastify already returns JSON errors, and a shared REST error envelope on the server side was not added. If more REST endpoints appear, defining one would make `AppError.i18nKey` mapping more precise than "status class".
 
 ---
