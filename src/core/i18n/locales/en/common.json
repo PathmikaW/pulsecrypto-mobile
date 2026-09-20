@@ -1,0 +1,53 @@
+{
+  "connection": {
+    "connecting": "Connecting...",
+    "connected": "Live",
+    "disconnected": "Disconnected",
+    "reconnecting": "Reconnecting..."
+  },
+  "untrackedPair": "Not currently tracked",
+  "nav": {
+    "terminal": "Terminal",
+    "markets": "Markets",
+    "telemetry": "Telemetry",
+    "settings": "Settings"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "reload": "Reload"
+  },
+  "telemetry": {
+    "title": "System Settings & Telemetry",
+    "subtitle": "Real-time performance monitoring and data ingestion controls.",
+    "networkControl": "NETWORK CONTROL",
+    "dataThrottling": "Data Throttling Configurator",
+    "updateFrequency": "Update Frequency",
+    "binaryProtocolCompression": "Binary Protocol Compression",
+    "adaptivePollingStrategy": "Adaptive Polling Strategy",
+    "systemTelemetry": "SYSTEM TELEMETRY",
+    "performanceDashboard": "Performance Dashboard",
+    "reset": "RESET",
+    "healthy": "HEALTHY",
+    "jsThreadFrameRate": "JS Thread Frame Rate",
+    "wsIngestionRate": "WS Message Ingestion Rate",
+    "memoryFootprint": "Memory Footprint Tracker",
+    "gpuAcceleration": "GPU ACCELERATION",
+    "gpuAccelerationValue": "WebGL Render Pipeline: Active",
+    "apiLatency": "API LATENCY",
+    "apiLatencyValue": "Avg Ping: 14ms (London-1)",
+    "storageCache": "STORAGE CACHE",
+    "storageCacheValue": "IndexedDB: 1.2GB utilized",
+    "msgsPerSec": "msgs/sec",
+    "fps": "FPS"
+  },
+  "errors": {
+    "network": "Can't reach the server. Check your connection.",
+    "timeout": "The server took too long to respond.",
+    "server": "The server ran into a problem. Please try again.",
+    "http": "The request couldn't be completed.",
+    "validation": "The server sent data the app doesn't understand.",
+    "cancelled": "Request cancelled.",
+    "unknown": "Something went wrong."
+  },
+  "menu": "Menu"
+}
