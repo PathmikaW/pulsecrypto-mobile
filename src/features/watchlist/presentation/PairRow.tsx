@@ -70,8 +70,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.background.divider,
     gap: spacing.md,
   },
-  leading: { gap: spacing.xs },
+  // Equal-share columns with a left-aligned middle column (like the order book), so prices line up vertically.
+  leading: { flex: 1, gap: spacing.xs, alignItems: 'flex-start' },
   symbol: { color: colors.text.primary, ...typography.body },
-  trailing: { alignItems: 'flex-end', gap: spacing.xs },
+  trailing: { flex: 1, alignItems: 'flex-start', gap: spacing.xs },
   price: { ...typography.tableValueLarge },
 });
