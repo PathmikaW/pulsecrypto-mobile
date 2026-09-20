@@ -256,7 +256,7 @@ const PriceStatsRow = memo(function PriceStatsRow({ meta }: { meta: PairMeta | u
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.screenTerminal },
-  lastUpdatedWrap: { marginTop: spacing.md },
+  lastUpdatedWrap: { marginTop: spacing.md, paddingHorizontal: spacing.lg },
   scrollContent: { paddingBottom: spacing.xl },
   waitingBanner: {
     alignItems: 'center',
