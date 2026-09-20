@@ -17,12 +17,14 @@ export function PerformanceDashboardCard() {
 
   return (
     <View style={styles.card}>
+      <Text style={styles.eyebrow}>{t('telemetry.systemTelemetry')}</Text>
       <View style={styles.headerRow}>
-        <View style={styles.headingBlock}>
-          <Text style={styles.eyebrow}>{t('telemetry.systemTelemetry')}</Text>
-          <Text style={styles.heading}>{t('telemetry.performanceDashboard')}</Text>
-        </View>
+        <Text style={styles.heading}>{t('telemetry.performanceDashboard')}</Text>
         <View style={styles.headerButtons}>
+          {/* Invisible one-line heading: gives this row the heading's exact first-line height (font scale included) so the buttons centre on "Performance". */}
+          <Text style={styles.lineSpacer} importantForAccessibility="no" accessibilityElementsHidden>
+            {'\u200B'}
+          </Text>
           <Pressable style={styles.resetButton}>
             <Text style={styles.resetText}>{t('telemetry.reset')}</Text>
           </Pressable>
@@ -57,13 +59,17 @@ export function PerformanceDashboardCard() {
 
 const styles = StyleSheet.create({
   card: { backgroundColor: `${colors.background.card}66`, borderRadius: radius.card, padding: spacing.lg },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  // flexShrink: 1 lets the heading wrap instead of crowding the RESET/HEALTHY buttons.
-  headingBlock: { flexShrink: 1 },
   eyebrow: { color: colors.signal.negativeMuted, ...typography.labelCaps },
-  heading: { color: colors.text.primary, ...typography.heading, marginTop: spacing.xs },
-  // marginTop aligns the buttons with the heading's first line, not the eyebrow above it.
-  headerButtons: { flexDirection: 'row', gap: spacing.sm, marginTop: 11 + spacing.xs },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: spacing.xs,
+  },
+  // flexShrink: 1 lets the heading wrap instead of crowding the RESET/HEALTHY buttons.
+  heading: { flexShrink: 1, color: colors.text.primary, ...typography.heading },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  lineSpacer: { ...typography.heading, width: 0, marginRight: -spacing.sm, opacity: 0 },
   resetButton: {
     backgroundColor: colors.background.divider,
     borderRadius: radius.button,
