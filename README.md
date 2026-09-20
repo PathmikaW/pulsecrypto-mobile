@@ -1,10 +1,11 @@
 # PulseCrypto — Mobile
 
+> **Reviewing this submission? Start with [DELIVERABLES.md](./DELIVERABLES.md)** — every assignment requirement mapped to a short description and its location in the code, the ADRs, the screen recordings and the installable APK.
+
 A React Native (Expo Dev Client) app that consumes the [`pulsecrypto-backend`](../pulsecrypto-backend)
 WebSocket broadcast and REST metadata endpoint, and visualizes live cryptocurrency market data
 under sustained real-time updates.
 
-Built for the Staff Engineer / Architect (Mobile Apps) practical assignment at Amused Group.
 UI built to full fidelity against the [Figma reference](https://www.figma.com/design/JYfr5h2vC9IFKtX3vasmZk/Pulse-Crypto-Mockup).
 
 ---
@@ -57,30 +58,24 @@ dependency changes (a new `expo install` package, a new config plugin), not on e
 `EXPO_PUBLIC_` prefix means they are inlined into the app bundle, so never put a secret in them. After
 changing either, restart Metro with `pnpm expo start --dev-client --clear`.
 
-| You want to run against                                      | Set both URLs to                                                                |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| A backend on your machine, Android Emulator                  | `http://10.0.2.2:3000` and `ws://10.0.2.2:3000` (the default in `.env.example`) |
-| A backend on your machine, physical device on the same Wi-Fi | `http://<your-machine's-LAN-IP>:3000` and `ws://<same>:3000`                    |
-| A hosted backend                                             | `http://<host>:3000` and `ws://<host>:3000` — see below                         |
+| You want to run against                                      | Set both URLs to                                                                  |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| A backend on your machine, Android Emulator                  | `http://10.0.2.2:3000` and `ws://10.0.2.2:3000` (the default in `.env.example`)   |
+| A backend on your machine, physical device on the same Wi-Fi | `http://<your-machine's-LAN-IP>:3000` and `ws://<same>:3000`                      |
+| The owner's hosted backend (when it is running)              | `https://pulsecrypto.duckdns.org` and `wss://pulsecrypto.duckdns.org` — see below |
 
 **You do not need:** an API key, a Binance account, an Expo/EAS account (builds are local with
-`pnpm expo run:android`), an Apple or Google developer account, or any AWS account. The project contains
+`pnpm expo run:android`; an Expo account is only needed for the optional shareable APK below), an Apple or Google developer account, or any AWS account. The project contains
 no secrets. The simplest way to run everything is the backend on your own machine
 (`pnpm start` in `pulsecrypto-backend`) plus the emulator.
 
-**Using the owner's hosted backend (optional).** For the submission the backend was also run on a small
-cloud VM (see the backend's [`docs/deployment-aws-ec2.md`](../pulsecrypto-backend/docs/deployment-aws-ec2.md)).
-That instance is private: its firewall accepts only the owner's IP address, it stops itself after six
-hours, and its address changes each time it is started. To use it, contact the repository owner and ask
-for:
-
-1. **the current host address** — this is the only "configuration" you will be given; there are no keys,
-2. **your public IP added to the firewall** — send the address shown by <https://checkip.amazonaws.com>
-   from the network you will use, and
-3. **the instance to be running.**
-
-Then put the address in `.env` as shown above. If the app sits on "RECONNECTING…", your IP changed or the
-instance is stopped.
+**The owner's hosted backend (optional).** For the submission the backend also runs on a small AWS EC2
+instance (see the backend's [`docs/deployment-aws-ec2.md`](../pulsecrypto-backend/docs/deployment-aws-ec2.md))
+behind Caddy with a free DuckDNS hostname, so it is reachable over TLS at `https://pulsecrypto.duckdns.org` and
+`wss://pulsecrypto.duckdns.org` — there are no keys to request. To keep costs down the instance is **stopped
+when not in use** (it also stops itself six hours after boot) and accepts at most 10 concurrent clients, so it
+may be offline when you try it. If the app sits on "RECONNECTING…", ask the repository owner to start it, or run
+the backend on your own machine instead. Each connected client streams about 0.46 GB per hour.
 
 **Release builds need TLS.** Outside development mode the app refuses to start unless both URLs are
 `https://`/`wss://` (ADR-M6). The plain `http`/`ws` setups above are for development builds and the emulator.
@@ -107,6 +102,19 @@ Expo CLI prompts you to pick a target if both an emulator and a device are avail
 **Faster iteration after the first install** (no native changes): once the dev-client APK is
 installed on your target, `pnpm expo start --dev-client` reconnects to it without a full
 rebuild.
+
+**Shareable release APK (optional, needs an Expo account).** The `preview` profile in `eas.json` builds a
+release APK for `arm64-v8a` only (about a third of the all-ABI size), with the hosted `https://`/`wss://` URLs
+from its `env` block — EAS cloud builds do not read the gitignored `.env`:
+
+```bash
+npx eas-cli login
+npx eas-cli build --platform android --profile preview
+```
+
+EAS prints a download link and a QR code (the v1.0.0 build is also on [Google Drive](https://drive.google.com/file/d/1z9LeGYG7x3_v1mY9_55HhiiHTHNNvp8A/view?usp=sharing)); open it on the phone and allow installing from that source. The APK
+runs on ARM64 phones (nearly all current devices) but not on x86 emulators — use `pnpm expo run:android` there.
+The `production` profile builds an AAB for store upload. The backend must be running for the app to show data.
 
 **Checks**
 
@@ -279,6 +287,8 @@ Stated plainly rather than left for a reviewer to find:
   that a different (or restarted) backend no longer tracks stays in the watchlist with its last price
   and the app-wide connection indicator, until the app data is cleared.
 - **English only, no language picker** — see Assumptions.
+- **The shareable APK is arm64-only and needs the hosted backend to be running.** It does not run on x86
+  emulators, and the EC2 instance is stopped when not in use (see Configuration).
 - **`pnpm audit --prod` reports one moderate advisory** (`uuid`, transitive through Expo's
   build-time config plugins — not part of the runtime bundle).
 - Telemetry/Settings controls, the account drawer's links, the memory-footprint figure and

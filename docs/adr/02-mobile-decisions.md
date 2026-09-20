@@ -21,13 +21,13 @@
    - `npx expo prebuild` generates real `android/` and `ios/` directories — standard Gradle and Xcode projects, not a sandbox.
    - These can be opened in Xcode or Android Studio and edited directly, exactly as a bare CLI project's native folders would be.
    - The Expo Modules API provides a clean interface for writing custom native modules when required.
-   - This matches the role's description of production-grade mobile work occasionally requiring direct native-project work when required — the native projects exist and are fully editable; they're simply not hand-carried across every framework upgrade by default.
+   - This fits production-grade mobile work, which occasionally requires direct native-project work — the native projects exist and are fully editable; they're simply not hand-carried across every framework upgrade by default.
 
 2. **Capability for a Platform With Future Native Needs:**
 
-   - Config plugins exist for common categories of native SDK a wagering platform would plausibly integrate over time — geolocation/geofencing compliance, KYC, biometrics — and where a config plugin doesn't yet exist for a specific SDK, the underlying native code still installs the same way it would in a bare project, since a Dev Client build _is_ a real native project.
+   - Config plugins exist for common categories of native SDK a production app might plausibly integrate over time — geolocation/geofencing compliance, KYC, biometrics — and where a config plugin doesn't yet exist for a specific SDK, the underlying native code still installs the same way it would in a bare project, since a Dev Client build _is_ a real native project.
    - Full control over code signing and provisioning profiles remains with the developer, not with Expo.
-   - EAS Build is entirely optional: `npx expo prebuild` followed by `npx expo run:android` / `npx expo run:ios` compiles with a local Gradle/Xcode toolchain, with no Expo account or cloud dependency required at any point.
+   - EAS Build is entirely optional: `npx expo prebuild` followed by `npx expo run:android` / `npx expo run:ios` compiles with a local Gradle/Xcode toolchain, with no Expo account or cloud dependency required at any point. _(v9.5: EAS Build was used once, optionally, for the shareable `preview` APK — see `eas.json` and ADR-X2's status note. The local-toolchain path still works end to end, and nothing requires an Expo account.)_
 
 3. **Lower Long-Run Maintenance Cost:**
 
