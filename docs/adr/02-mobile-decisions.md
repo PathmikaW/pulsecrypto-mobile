@@ -41,10 +41,10 @@
    - New Architecture (Fabric/TurboModules) is fully supported.
    - **Counter-evidence, stated plainly rather than omitted:** the picture isn't one-sided. Shopify announced in 2026 that it is moving its major applications away from React Native entirely, back to native Swift/Kotlin, citing AI-assisted native development narrowing cross-platform's traditional cost advantage — and as part of that move, Shopify is winding down its sponsorship of React Native open-source projects it built, including FlashList (see ADR-M3). That doesn't change the calculus for a small, from-scratch real-time viewer like PulseCrypto, where the native-integration surface is minimal and the iteration-speed benefit is real — but an honest technical comparison includes both data points, not only the one that supports the choice made.
 
-5. **Fit for the Assignment as Specified:**
+5. **Fit for the Requirements as Specified:**
 
    - Faster iteration without sacrificing native capability.
-   - Both Expo and bare RN CLI are explicitly listed as acceptable in the assignment brief — this is treated as an engineering judgment call rather than a compliance requirement, and is documented as such.
+   - Both Expo and bare RN CLI are explicitly listed as acceptable in the requirements — this is treated as an engineering judgment call rather than a compliance requirement, and is documented as such.
 
 **Trade-offs accepted.**
 
@@ -77,7 +77,7 @@
 **Rationale.**
 
 1. **Zustand for WebSocket-driven state:** its selector pattern keeps re-renders scoped to only the components subscribed to data that actually changed — important at a 100ms update cadence, where a naive context-based approach would re-render far more of the tree than necessary on every tick.
-2. **TanStack Query for REST state — a deliberately forward-looking choice, not a today-only justification.** As it stands, `/pairs/meta` is the only REST call in the app, and a case could be made that a purpose-built server-state library is more than that single endpoint needs on its own. That framing undersells the actual reasoning: the split between "client state" (Zustand) and "server state" (TanStack Query) is an architectural boundary, and boundaries are far cheaper to establish before a codebase grows into needing them than to retrofit afterward, once ad hoc `fetch` calls and hand-rolled loading-state booleans have already spread across several screens. This mirrors the same reasoning already applied elsewhere in this document — the extensibility built into ADR-B3's pair resolution, or ADR-M8's feature-first structure being explicitly sized for a feature that doesn't exist yet — PulseCrypto's architecture is treated throughout as a production system's first iteration, not a disposable assignment scaffold, and the REST state layer is held to that same standard rather than to "what does today's one endpoint strictly require."
+2. **TanStack Query for REST state — a deliberately forward-looking choice, not a today-only justification.** As it stands, `/pairs/meta` is the only REST call in the app, and a case could be made that a purpose-built server-state library is more than that single endpoint needs on its own. That framing undersells the actual reasoning: the split between "client state" (Zustand) and "server state" (TanStack Query) is an architectural boundary, and boundaries are far cheaper to establish before a codebase grows into needing them than to retrofit afterward, once ad hoc `fetch` calls and hand-rolled loading-state booleans have already spread across several screens. This mirrors the same reasoning already applied elsewhere in this document — the extensibility built into ADR-B3's pair resolution, or ADR-M8's feature-first structure being explicitly sized for a feature that doesn't exist yet — PulseCrypto's architecture is treated throughout as a production system's first iteration, not a disposable prototype, and the REST state layer is held to that same standard rather than to "what does today's one endpoint strictly require."
 3. **Dynamic pair count, handled by design, not by exception:** `marketStore` is keyed by symbol, not by a fixed-length structure — it accommodates however many pairs the backend is actually broadcasting, and that count or membership can differ between app sessions if the backend resolved a different additional-pair set on its last restart. No component or store logic assumes an exact count of five.
 4. **`lastUpdatedAt` handling:** `marketStore.updatePair` sets `lastUpdatedAt` directly from the field the backend's conflation tick produced (ADR-B4), with no client-side recomputation — the backend remains the single source of truth for "when was this data current," and `LastUpdatedLabel` (ADR-M8) simply renders what it's given, formatted per the active locale (ADR-M9).
 
@@ -128,7 +128,7 @@
 **Rationale.**
 
 1. Reanimated runs animations on the UI thread via worklets, so price-flash and order-book bar-width transitions are never blocked by JS-thread work processing the next incoming tick.
-2. This is the single highest-leverage decision for the requirement that the interface remain smooth and responsive during sustained update bursts — an animation approach tied to the JS thread would be the first thing to visibly degrade under load, precisely when the assignment is testing for that degradation.
+2. This is the single highest-leverage decision for the requirement that the interface remain smooth and responsive during sustained update bursts — an animation approach tied to the JS thread would be the first thing to visibly degrade under load, precisely the degradation the requirements single out.
 3. It's the de facto standard for this category of app (trading, real-time dashboards) for the same reason.
 
 **Trade-offs accepted.** An additional native dependency, handled transparently by the Expo Dev Client setup (ADR-M1); a somewhat more involved animation API than the built-in `Animated`, in exchange for guaranteed UI-thread execution. See §5 for a known Expo SDK 56 regression affecting this exact library, and why that makes the specific SDK version choice non-cosmetic.
@@ -244,22 +244,22 @@ export const useMarketStore = create<MarketState>()(
 **Features.**
 
 - Exponential backoff with ±20% jitter (1s → 2s → 4s → 8s, capped at 30s) for reconnection attempts, computed by the shared `computeBackoffMs` (`core/utils/backoff.ts`, also used by the REST retry policy — ADR-M12).
-- Liveness via broadcast silence, not a separate heartbeat: `STALE_CONNECTION_TIMEOUT_MS` (1000ms, computed in `useWebSocket.ts` as `MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS` = 10 × 100ms — the same multiple of the broadcast interval the backend itself uses in ADR-B4 to decide a client has fallen behind; the two inputs are duplicated as constants in the mobile code, since the mobile app has no access to the backend's env, so a backend retune must be mirrored by hand) — if no message arrives within that window, the connection is treated as dead and reconnection begins.
+- Liveness via broadcast silence, not a separate heartbeat: `STALE_CONNECTION_TIMEOUT_MS` (1000ms — ten broadcast intervals of silence, computed in `useWebSocket.ts` as `MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS` = 10 × 100ms; the two inputs are the backend's default values, duplicated as constants in the mobile code since the mobile app has no access to the backend's env, so a backend retune must be mirrored by hand) — if no message arrives within that window, the connection is treated as dead and reconnection begins. This is not the same budget as the backend's eviction threshold: ADR-B4's skip counter advances once per pair message, so the backend evicts a saturated client after roughly 100–200ms. The client's 1000ms window is a separate, more tolerant liveness threshold. An evicted client normally learns of it from the `1013` close frame; the silence timer covers the cases where no close frame ever arrives (a dropped network, a crashed server).
 - App-state awareness — the connection is paused when the app is backgrounded and re-established on foreground, rather than reconnecting uselessly while the app isn't visible.
 - An explicit connection-status union: `'connecting' | 'connected' | 'disconnected' | 'reconnecting'` (lowercase string literals in the code).
 
 **Rationale.**
 
 1. **No redundant liveness mechanism:** building a parallel keepalive channel next to a data stream that already implies "I'm alive" on every tick would be complexity solving a problem this specific design doesn't have — this was caught and corrected during review rather than shipped as an unexamined default.
-2. **The threshold stays tied to its source, not a second independent number:** documenting `STALE_CONNECTION_TIMEOUT_MS` as a multiple of `BROADCAST_INTERVAL_MS` means the two can't silently drift apart if the broadcast interval is ever retuned — a plain, unrelated hardcoded timeout wouldn't have that property.
+2. **The threshold is expressed in its source's units, not as an unrelated number:** defining `STALE_CONNECTION_TIMEOUT_MS` as a multiple of `BROADCAST_INTERVAL_MS` makes the dependency explicit, so a retune of the broadcast interval shows exactly which mobile constants have to change with it. It does not keep them in sync automatically — the values are hand-copied (see above).
 3. **Reliability:** an explicit state machine, owned by the application rather than a third-party library, handles edge cases specific to a mobile runtime (backgrounding, network interface switching) that a browser-focused library wouldn't anticipate.
 4. **Testability:** the hook's state transitions — including the silence timeout — can be tested in isolation, independent of a real socket connection.
-5. **Directly satisfies the assignment's stated requirement** to automatically reconnect when connectivity is restored, with the added correctness of not fighting the OS over background network usage.
+5. **Directly satisfies the stated requirement** to automatically reconnect when connectivity is restored, with the added correctness of not fighting the OS over background network usage.
 
 **Trade-offs accepted.** More code than adopting a reconnection library, in exchange for full control over mobile-specific edge cases; the silence-timeout approach depends on the backend genuinely broadcasting at a predictable cadence whenever healthy, which ADR-B4 already guarantees by design — if that guarantee ever changed, this threshold would need revisiting alongside it.
 
 **Defensive validation & error boundary — added for full NFR coverage (v8.1).** The
-assignment's non-functional requirements explicitly call for "appropriate error handling,"
+project's non-functional requirements explicitly call for "appropriate error handling,"
 and a review of this document against that requirement found two concrete gaps: nothing
 validated an incoming WebSocket message before applying it to `marketStore`, and nothing
 prevented a rendering error from crashing the entire app to a white screen. Both are cheap
@@ -298,13 +298,13 @@ development, where `__DEV__` is always true.
 
 ### ADR-M7: Offline Strategy
 
-**Context.** The assignment requires defined behavior when the backend becomes unavailable: showing connection status, continuing to display the most recent data, and reconnecting automatically once connectivity is restored.
+**Context.** The requirements call for defined behavior when the backend becomes unavailable: showing connection status, continuing to display the most recent data, and reconnecting automatically once connectivity is restored.
 
 **Decision.** A three-tier approach:
 
 - **Required:** stale data remains visible when the backend is unavailable; a connection-status indicator is always shown; reconnection is automatic with exponential backoff (ADR-M6).
 - **Additional, low-cost value:** the last known market state is cached in MMKV (ADR-M5), so the app never shows an empty screen on a cold launch, even before the first live update arrives.
-- **Explicitly out of scope:** a full offline mode with historical data or complex synchronization logic — not required by the assignment, and would add complexity without corresponding value here.
+- **Explicitly out of scope:** a full offline mode with historical data or complex synchronization logic — not required, and would add complexity without corresponding value here.
 
 ```typescript
 const [connectionStatus, setConnectionStatus] = useState<
@@ -333,9 +333,9 @@ useEffect(() => {
 
 _(The snippet above is illustrative pseudocode of the flow. The implementation is the `WebSocketSource` state machine (ADR-M6) writing into `marketStore`; verified end-to-end on the Android Emulator in v9.1 — stopping the backend showed "RECONNECTING…" with every row's last price still on screen, and restarting it returned the indicator to "LIVE" with no user action.)_
 
-**Rationale.** This satisfies the assignment's stated requirement directly, and the MMKV-cached last-known-state addition is a small amount of extra value (no empty screen on cold launch) for very little additional complexity, since the persistence mechanism already exists for favourites (ADR-M5).
+**Rationale.** This satisfies the stated requirement directly, and the MMKV-cached last-known-state addition is a small amount of extra value (no empty screen on cold launch) for very little additional complexity, since the persistence mechanism already exists for favourites (ADR-M5).
 
-**Trade-offs accepted.** Displayed data can be stale during a disconnection — mitigated by the always-visible connection-status indicator, which is the assignment's own stated mechanism for surfacing this to the user.
+**Trade-offs accepted.** Displayed data can be stale during a disconnection — mitigated by the always-visible connection-status indicator, which is the requirements' own stated mechanism for surfacing this to the user.
 
 ---
 
@@ -464,7 +464,7 @@ export interface IFavouritesRepository {
 
 1. **Scalability:** adding a new feature — a "Portfolio" screen, for instance — means creating one new folder under `features/`, without needing to hunt through a shared `domain/`, `data/`, or `presentation/` directory that every other feature also touches.
 2. **Reduced merge-conflict surface:** multiple developers working on `watchlist` and `market-details` simultaneously touch almost entirely disjoint sets of files.
-3. **Clean Architecture preserved, at the right granularity:** the domain/data/presentation dependency direction is still enforced, but locally within each feature (and within `core/`), which is easier to audit than a codebase-wide version of the same rule — a reviewer checking `favourites/` only needs to look inside `favourites/`.
+3. **Clean Architecture preserved, at the right granularity:** the domain/data/presentation dependency direction is still enforced, but locally within each feature (and within `core/`), which is easier to audit than a codebase-wide version of the same rule — anyone checking `favourites/` only needs to look inside `favourites/`.
 4. **The shared layer is scoped by an explicit test, not by convenience:** something belongs in `core/` only if two or more features genuinely depend on it (`MarketData`, `IMarketRepository`, `PriceText`, the i18n setup) — `favourites` stays feature-owned precisely because nothing else needs to reach into it, and the barrel-export (`index.ts`) convention makes that boundary enforceable rather than aspirational.
 5. **Consistent with common practice for this pattern at scale** — feature-first-with-internal-layering, using a small shared kernel, is a widely recommended structure for growing React Native codebases for the reasons above, not a bespoke invention for this project.
 
@@ -488,7 +488,7 @@ export interface IFavouritesRepository {
 | lingui (macro-based)                                                            | More type-safe string extraction, compile-time key checking                                                                                                                                                                             | Heavier build-tooling setup (babel/SWC macros) for a project this size; steeper learning curve without a corresponding payoff yet |
 | Meta's FBT                                                                      | Battle-tested internally at Meta                                                                                                                                                                                                        | Thin React Native ecosystem support and documentation relative to i18next outside Meta's own infrastructure — a poor fit here     |
 
-**Decision.** `i18next` + `react-i18next` for translation strings and formatting logic; `expo-localization` for device-locale detection. Structure and wire the pattern fully now; ship with a complete English (`en`) translation as the only shipped locale, proving the mechanism end-to-end without committing to translating and maintaining additional languages for this exercise.
+**Decision.** `i18next` + `react-i18next` for translation strings and formatting logic; `expo-localization` for device-locale detection. Structure and wire the pattern fully now; ship with a complete English (`en`) translation as the only shipped locale, proving the mechanism end-to-end without committing to translating and maintaining additional languages for this project.
 
 **Implementation.**
 
@@ -506,7 +506,7 @@ export interface IFavouritesRepository {
 
 **Trade-offs accepted.**
 
-- One additional dependency and a small amount of upfront setup (provider wiring, the `core/i18n/` module) for an app that, strictly by the assignment's own requirements, only needs to render in one language.
+- One additional dependency and a small amount of upfront setup (provider wiring, the `core/i18n/` module) for an app that, strictly by its own requirements, only needs to render in one language.
 - The verification described in the original delivery plan — rendering key screens under a non-English locale in component tests, to catch hardcoded strings — has **not** been done: the mobile suite is Jest unit tests only (see §8's status note). Every screen does route its text through `t()`; that is verified by inspection, not by test.
 - Shipping only English initially means the localization story right now is about correct infrastructure — the mechanism, the formatting discipline, the namespace structure — rather than about actual translated content in multiple languages, and the README should state that distinction plainly rather than imply broader language coverage than exists.
 
@@ -515,7 +515,7 @@ export interface IFavouritesRepository {
 ### ADR-M10: Mobile Design System & Screen Scope — Sourced from Figma via API
 
 **Context.** This document's earlier versions treated the Figma mockup as the visual
-source of truth for all four of the assignment's mobile screens (§"Reference Materials"),
+source of truth for all four of the project's required mobile screens (§"Reference Materials"),
 on the assumption that its content would map cleanly onto those four screens. That
 assumption was never actually verified against live Figma data until this revision — no
 Figma MCP connector or Dev Mode session was available earlier, and a plain URL fetch only
@@ -537,30 +537,30 @@ a genuine mismatch worth recording as a decision, not silently absorbing.
 
 Both screens share a bottom nav bar with **four tabs — Terminal, Markets, Telemetry,
 Settings** — but only two of the four have a designed screen behind them. There is no
-`Markets` screen: the assignment's actual required watchlist (five-pair list, search,
+`Markets` screen: the project's actual required watchlist (five-pair list, search,
 favourite toggle) isn't mocked anywhere in the file. Conversely, a large fraction of what
 _is_ mocked — the account drawer, the entire telemetry/settings dashboard — sits outside
-the assignment's Part 2 functional requirements entirely.
+the project's functional requirements entirely.
 
 **Decision.** Presented to the developer as an explicit choice (not resolved unilaterally),
 who chose: **build everything the Figma file provides at full, literal fidelity — including
-the parts outside the assignment's stated scope — and design the one required screen Figma
+the parts outside the project's stated scope — and design the one required screen Figma
 doesn't cover (Markets/Watchlist, with Search and Favourites) fresh, in the same
 Figma-verified visual language, rather than reinterpreting or trimming what Figma
 specifies.** Concretely:
 
-- `Terminal` = the assignment's "Market Details" screen, parameterized per selected pair
+- `Terminal` = the required "Market Details" screen, parameterized per selected pair
   (Figma shows a fixed "BTC/USDT"; the real app renders whichever pair is active). The
-  assignment's required numeric fields Figma doesn't show — Buy Pressure %, Sell Pressure
+  required numeric fields Figma doesn't show — Buy Pressure %, Sell Pressure
   %, Spread, Last Updated Timestamp — are added onto this screen using the same
-  typography/spacing system, since the assignment's requirement doesn't bend to the
+  typography/spacing system, since the requirement doesn't bend to the
   mockup's omission of it. The "Market Cap" ticker cell is **kept as designed** (corrected in
   v9.1 — an earlier draft of this ADR replaced it with "24H Volume"). It is fed by a static
   placeholder: Binance's `ticker/24hr` has no market-cap field, so the backend returns a fixed
   `MARKET_CAP_PLACEHOLDER` in `PairMeta.marketCap`, the same display-only category as the
   Telemetry values below. `volume24h` and `tradingStatus` remain in `/pairs/meta` but are not
-  shown on Terminal — the assignment doesn't ask for them on any screen.
-- `Markets` = the assignment's "Market Watchlist" screen (+ Search, + Favourites), designed
+  shown on Terminal — the requirements don't ask for them on any screen.
+- `Markets` = the required "Market Watchlist" screen (+ Search, + Favourites), designed
   fresh using the extracted color/type/spacing tokens (ADR-M10, `design-tokens.md`) since
   no Figma frame exists to build it against.
 - `Telemetry & Settings` and the account drawer are built exactly as designed, **at the UI
@@ -568,7 +568,7 @@ specifies.** Concretely:
   - Controls with no backing system (the throttling configurator's slider/toggles, API
     Keys/Security/Trade History/Sign Out in the account drawer) are implemented as local UI
     state only — visually functional, not wired to anything real. This is stated plainly in
-    the README as intentional, not left for a reviewer to discover.
+    the README as intentional, not left for a reader to discover.
   - Metrics that _are_ genuinely obtainable client-side — the WS message-ingestion rate
     (trivial: `useWebSocket` already receives every message) and JS-thread FPS (obtainable
     via a frame-time sampler or Reanimated's frame callback, which is already a dependency —
@@ -599,22 +599,22 @@ headings type system, and a 4/8px-based spacing scale are all verified, traced v
    backing, matching this document's stated discipline of not adding complexity that isn't
    earning its place (Executive Summary, §1) — was the recommendation actually made. The
    developer's reasoning for overriding that recommendation is presentation fidelity: the
-   assignment is evaluated in part on the finished application, and a submission that
-   visibly matches its own referenced mockup, in full, is worth more than a strictly
-   scope-minimal one for that specific evaluation criterion. Both are legitimate
-   engineering judgments about what a reviewer will actually weigh; this document records
-   which one was chosen and why, rather than picking one silently.
+   finished application is what people actually see, and an app that visibly matches its
+   own referenced mockup, in full, is worth more than a strictly scope-minimal one for
+   that purpose. Both are legitimate engineering judgments about what matters most in the
+   finished product; this document records which one was chosen and why, rather than
+   picking one silently.
 3. **Real-vs-mock data treatment per control is decided by whether a real, cheap source
    exists, not by whether a control looks impressive.** This is the same standard applied
    throughout this document (e.g. ADR-B6's metadata fallback, ADR-M5's synchronous-read
    choice) — honesty about what's real costs nothing extra here and is worth stating
-   explicitly per control rather than leaving a reviewer to guess which numbers on the
+   explicitly per control rather than leaving a reader to guess which numbers on the
    Telemetry screen are live.
 
-**Trade-offs accepted.** The mobile app now has five screens instead of the assignment's
+**Trade-offs accepted.** The mobile app now has five screens instead of the required
 four, two of which (Telemetry & Settings, the account drawer) exist purely for design
 fidelity and contain no functional requirement or backend support — real implementation
-effort spent on scope the assignment doesn't ask for and doesn't test, accepted
+effort spent on scope the requirements don't ask for, accepted
 deliberately for the presentation-fidelity reason above. The Markets/Watchlist screen,
 being freshly designed rather than mockup-sourced, carries a small risk of looking visually
 inconsistent with the Figma-sourced screens if the token system isn't followed carefully —
@@ -728,7 +728,7 @@ WS-driven or otherwise continuously-updating data must gate that subscription on
 
 ### ADR-M12: HTTP Client, Common Error Model and Retry Policy — axios (v9.2)
 
-**Context.** Through v9.1 the app's only REST call (`GET /pairs/meta`) went through a hand-written `fetch` wrapper that threw a plain `Error`. A review of the mobile error handling against the assignment's "appropriate error handling" and "robust connection handling" requirements found five gaps:
+**Context.** Through v9.1 the app's only REST call (`GET /pairs/meta`) went through a hand-written `fetch` wrapper that threw a plain `Error`. A review of the mobile error handling against the project's "appropriate error handling" and "robust connection handling" requirements found five gaps:
 
 1. **No timeout.** `fetch` has none, so a stalled connection left the request pending indefinitely and the retry logic never got a failure to act on.
 2. **Untyped errors.** Callers could not tell a dropped connection from a 404 from a payload that failed the contract schema.

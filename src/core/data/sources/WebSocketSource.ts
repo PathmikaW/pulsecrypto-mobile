@@ -8,7 +8,7 @@ const BACKOFF_JITTER_RATIO = 0.2;
 
 export interface WebSocketSourceOptions {
   url: string;
-  /** ~MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS; mirrors the backend's eviction threshold (ADR-B4). */
+  /** Silence window before the connection is treated as dead; ten broadcast intervals by default (ADR-M6). */
   staleConnectionTimeoutMs?: number;
   onMessage: (raw: string) => void;
   onStatusChange: (status: ConnectionStatus) => void;

@@ -1,6 +1,6 @@
 # Offline / Connection-State Behavior — Implementation Spec
 
-Source: ADR-M6, ADR-M7. Implements the assignment's offline-behavior requirement:
+Source: ADR-M6, ADR-M7. Implements the project's offline-behavior requirement:
 display connection status, keep showing last-known data, reconnect automatically.
 
 ## Connection state machine
@@ -30,8 +30,9 @@ message from either side.
 
 ```typescript
 const STALE_CONNECTION_TIMEOUT_MS = MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS; // ~1000ms
-// both constants mirror the backend's own env defaults — document this derivation in code,
-// don't hardcode 1000 as an unrelated magic number.
+// both constants are hand-copied from the backend's env defaults — document this derivation in
+// code, don't hardcode 1000 as an unrelated magic number. This is a liveness window, not the
+// backend's eviction budget (the backend evicts a saturated client after ~100–200ms, ADR-B4).
 
 let lastMessageAt = Date.now();
 // on every inbound WS message, regardless of pair: lastMessageAt = Date.now();
@@ -80,7 +81,7 @@ socket.onmessage = (event) => {
 };
 ```
 
-This is the concrete mechanism behind the assignment's "appropriate error handling"
+This is the concrete mechanism behind the project's "appropriate error handling"
 non-functional requirement on the live-data path — a malformed or unexpected payload is
 dropped silently (logged only in dev), not applied to the store and not allowed to throw
 and take down the socket handler.

@@ -100,7 +100,7 @@ that silently bypassed translation.
 
 Persisted in MMKV under the same mechanism as favourites (ADR-M5), key `language-override`.
 When set by explicit user action (a settings screen, if one exists — not required by the
-assignment, but the infrastructure supports it), it takes precedence over device locale on
+requirements, but the infrastructure supports it), it takes precedence over device locale on
 next launch, per `resolveInitialLocale()` above.
 
 ## Number & date formatting — locale-aware by construction

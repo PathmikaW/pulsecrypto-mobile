@@ -1,6 +1,6 @@
 # Mobile Screens — Behavior Spec
 
-Source: assignment brief (Part 2), ADR-M2/M3/M4/M8/M9/M10. Visual detail (colors,
+Source: project requirements, ADR-M2/M3/M4/M8/M9/M10. Visual detail (colors,
 typography, spacing, radii) is specified precisely in `specs/design-tokens.md`, pulled from
 the [Figma mockup](https://www.figma.com/design/JYfr5h2vC9IFKtX3vasmZk/Pulse-Crypto-Mockup?t=1Is1HymqvhvoKHab-1)'s
 own API — this spec covers screen-level data and behavior, and defers to `design-tokens.md`
@@ -15,7 +15,7 @@ color, font, spacing, and radius value used below is real, traced to its source 
 approximated. Implement against `design-tokens.md`, not a fresh Figma inspection, unless a
 specific micro-detail is flagged there as unresolved.
 
-**The Figma file's actual screen inventory does not match the assignment's screen list
+**The Figma file's actual screen inventory does not match the project's screen list
 one-to-one — this was surfaced, discussed, and resolved explicitly (not silently) before
 this spec was written.** The file contains exactly two designed screens:
 
@@ -31,27 +31,27 @@ this spec was written.** The file contains exactly two designed screens:
 
 Both screens' bottom nav bar shows **four tabs — Terminal, Markets, Telemetry,
 Settings** — but only two of those four have an actual designed screen in the file.
-There is no `Markets` screen (the assignment's watchlist) anywhere in the file.
+There is no `Markets` screen (the project's watchlist) anywhere in the file.
 
 **Resolution (explicit user decision, not an assumption):** build everything the Figma
 file _does_ contain exactly as designed, at full fidelity — including the account drawer
 and the telemetry/settings dashboard, even though large parts of both sit outside the
-assignment's literal functional requirements. For the one thing the assignment requires
+project's literal functional requirements. For the one thing the requirements call for
 that Figma doesn't cover — the watchlist/`Markets` screen, plus its search and favourites
 behavior — design it fresh, in the same verified visual language (`design-tokens.md`),
 since no mockup exists to match against. This expands the mobile app's screen count beyond
-the assignment's Part 2 list; see ADR-M10 for the full decision and rationale, including
+the project's required screen list; see ADR-M10 for the full decision and rationale, including
 which parts of the Figma-sourced screens get real data vs. static/display-only treatment
 given there's no backend spec behind account management or client-side throttling controls.
 
 ## Screen inventory (revised — five screens, not four)
 
-| Screen               | Maps to                                                                  | Source                                                                                                         |
-| -------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Markets              | Assignment's "Market Watchlist" (+ Search, + Favourites)                 | Not in Figma — designed fresh, per `design-tokens.md`                                                          |
-| Terminal             | Assignment's "Market Details," parameterized per selected pair           | Figma "Trading Terminal," built at full fidelity                                                               |
-| Telemetry & Settings | Not an assignment requirement — built because Figma specifies it in full | Figma "Telemetry & Settings," built at full fidelity (see ADR-M10 for real-vs-mock data treatment per control) |
-| Account drawer       | Not an assignment requirement — built because Figma specifies it in full | Figma "Aside — Side Navigation Drawer," reachable from Terminal's app bar hamburger button                     |
+| Screen               | Maps to                                                                 | Source                                                                                                         |
+| -------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Markets              | Required "Market Watchlist" (+ Search, + Favourites)                    | Not in Figma — designed fresh, per `design-tokens.md`                                                          |
+| Terminal             | Required "Market Details," parameterized per selected pair              | Figma "Trading Terminal," built at full fidelity                                                               |
+| Telemetry & Settings | Not a functional requirement — built because Figma specifies it in full | Figma "Telemetry & Settings," built at full fidelity (see ADR-M10 for real-vs-mock data treatment per control) |
+| Account drawer       | Not a functional requirement — built because Figma specifies it in full | Figma "Aside — Side Navigation Drawer," reachable from Terminal's app bar hamburger button                     |
 
 ## Screen: Markets / Watchlist (`features/watchlist/presentation/WatchlistScreen.tsx`)
 
@@ -98,13 +98,13 @@ rows) — don't over-engineer this with a search index.
 ## Screen: Terminal / Market Details (`features/market-details/presentation/MarketDetailScreen.tsx`)
 
 Maps to Figma's "Trading Terminal" screen (node `1:5`), built at full fidelity, and
-maps to the assignment's "Market Details" requirement, **parameterized per selected pair**
+maps to the project's "Market Details" requirement, **parameterized per selected pair**
 (Figma's mock shows a fixed "BTC/USDT," but this is a live app — the screen renders
 whichever pair was tapped from Markets, or the currently-active pair when reached via the
 bottom nav's "Terminal" tab directly, defaulting to the first required pair or the last
 pair viewed if none is selected yet). Subscribes via `IMarketRepository.subscribe(pair, ...)`.
 
-**Contents, as designed in Figma, with the assignment's required numeric fields layered on
+**Contents, as designed in Figma, with the project's required numeric fields layered on
 top where Figma only shows a qualitative equivalent:**
 
 - **Header:** pair symbol as the title (`Heading 1`, e.g. "BTC/USDT"), hamburger button
@@ -113,7 +113,7 @@ top where Figma only shows a qualitative equivalent:**
   connected), not a separate ad hoc component.
 - **Price Ticker Section:** current price (`PriceText`, `type.priceDisplay`, flash green/red
   on change per ADR-M4), 24h % change, and three stat cells — Figma shows 24H High / 24H
-  Low / Market Cap. **The assignment doesn't ask for Market Cap and Binance's `ticker/24hr`
+  Low / Market Cap. **The requirements don't ask for Market Cap and Binance's `ticker/24hr`
   has no such field.** _(Revised in v9.1 — this spec originally said to replace the cell with
   24H Volume; that is not what was built.)_ All three cells are rendered as designed. Market
   Cap is fed by `PairMeta.marketCap`, a static placeholder (`MARKET_CAP_PLACEHOLDER`) the
@@ -121,8 +121,8 @@ top where Figma only shows a qualitative equivalent:**
   screen's static values (ADR-M10). `volume24h` stays in `/pairs/meta` but isn't shown here.
 - **Spread, Buy Pressure, Sell Pressure:** not shown numerically anywhere in the Figma
   mock — the closest equivalent is the Market Depth panel's qualitative
-  `Pressure: Sell Heavy` / `Liquidity Gap: Low (0.02%)` legend. Since the assignment
-  explicitly requires these three as numeric values, **add them as a small stat row using
+  `Pressure: Sell Heavy` / `Liquidity Gap: Low (0.02%)` legend. Since the requirements
+  explicitly call for these three as numeric values, **add them as a small stat row using
   `type.tableValue`/`type.labelCaps`** (consistent with the rest of the screen's typography),
   either alongside or replacing the qualitative legend — placed near the Market Depth
   section where Figma already reserves visual space for this category of information. Use
@@ -141,8 +141,8 @@ top where Figma only shows a qualitative equivalent:**
   from the real `buyPressure`/`sellPressure` split (e.g. "Buy Heavy" when
   `buyPressure > 60`, "Sell Heavy" when `sellPressure > 60`, "Balanced" otherwise) rather
   than a static string.
-- **Last updated timestamp:** not present in the Figma mock at all — the assignment
-  requires it. Add `LastUpdatedLabel` (renders `MarketData.lastUpdatedAt` via
+- **Last updated timestamp:** not present in the Figma mock at all — the requirements
+  call for it. Add `LastUpdatedLabel` (renders `MarketData.lastUpdatedAt` via
   `Intl.DateTimeFormat`, per `localization.md`, never recomputed client-side — ADR-B4/§12.2)
   in a position consistent with the screen's existing label style (e.g. near the price
   ticker or order book header), styled with `type.bodySmall`/`text.label`.
@@ -156,7 +156,7 @@ app's lifetime.
 
 ## Screen: Telemetry & Settings (`features/telemetry-settings/presentation/TelemetryScreen.tsx`)
 
-Maps to Figma's "Telemetry & Settings" screen (node `1:314`) — **not an assignment
+Maps to Figma's "Telemetry & Settings" screen (node `1:314`) — **not a functional
 requirement**, built because the Figma file specifies it in full and the resolution
 decision (above) was to build everything Figma provides at full fidelity. See ADR-M10 for
 which of this screen's controls get real data vs. are display-only.
@@ -234,7 +234,7 @@ per-screen or per-pair state.
 
 ## Loading, error, and empty states (industry-standard baseline — confirm against Figma)
 
-The assignment and ADR are precise about the live-data path; these states aren't spelled
+The requirements and ADR are precise about the live-data path; these states aren't spelled
 out explicitly, so the following is the standard, defensible default for a real-time
 trading UI. If Figma shows specific empty/loading/error designs, those take precedence —
 this section is the fallback for anything the mockup doesn't cover, not a competing spec.
@@ -289,7 +289,7 @@ through `react-i18next` like every other user-facing string (ADR-M9).
   separate hardcoded string that could drift out of sync with a translated label.
 - `ConnectionIndicator` and the price-flash colors are not the _only_ signal for their
   respective states — color alone shouldn't carry meaning (a connection-status text label
-  already satisfies this per the assignment's own requirement; price flash is a
+  already satisfies this per the project's own requirement; price flash is a
   supplementary animation on top of the numeric value change, not a replacement for it).
 - FlashList rows and buttons meet standard minimum touch-target sizing (44×44pt) regardless
   of how dense the Figma visual design is — adjust internal padding to hit this if the
