@@ -8,7 +8,7 @@ import type { MarketData } from '../domain/models/MarketData';
 import type { TradingPairSymbol } from '../domain/models/TradingPair';
 import { useAppState } from './useAppState';
 
-// Derived from the backend's MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS so the two can't drift apart (ADR-M6).
+// Ten broadcast intervals of silence, built from hand-copied backend defaults; update these if the backend's are retuned (ADR-M6).
 const MAX_CONSECUTIVE_SKIPS = 10;
 const BROADCAST_INTERVAL_MS = 100;
 const STALE_CONNECTION_TIMEOUT_MS = MAX_CONSECUTIVE_SKIPS * BROADCAST_INTERVAL_MS;

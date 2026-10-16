@@ -208,7 +208,8 @@ this is what avoids a flash of incorrect state on launch.
   30s) for reconnection.
 - Liveness is inferred from **broadcast silence**, not a ping/pong exchange:
   `STALE_CONNECTION_TIMEOUT_MS` (~1000ms default) is documented as a multiple of the
-  backend's `BROADCAST_INTERVAL_MS` (`MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS`).
+  backend's `BROADCAST_INTERVAL_MS` (`MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS`), using
+  hand-copied backend defaults — it is not the backend's eviction budget (ADR-M6).
   If no message arrives within that window, treat the connection as dead.
 - **Do not add a client-side ping/pong message.** This was evaluated and explicitly
   rejected — the data stream already answers "is this connection alive." Adding one is
