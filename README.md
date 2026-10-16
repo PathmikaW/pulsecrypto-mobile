@@ -1,6 +1,6 @@
 # PulseCrypto — Mobile
 
-> **Reviewing this submission? Start with [DELIVERABLES.md](./DELIVERABLES.md)** — every assignment requirement mapped to a short description and its location in the code, the ADRs, the screen recordings and the installable APK.
+> **New here? Start with [DELIVERABLES.md](./DELIVERABLES.md)** — every project requirement mapped to a short description and its location in the code, the ADRs, the screen recordings and the installable APK.
 
 A React Native (Expo Dev Client) app that consumes the [`pulsecrypto-backend`](../pulsecrypto-backend)
 WebSocket broadcast and REST metadata endpoint, and visualizes live cryptocurrency market data
@@ -15,7 +15,7 @@ UI built to full fidelity against the [Figma reference](https://www.figma.com/de
 **Prerequisites**
 
 - Node.js 24.x, pnpm (`corepack enable`)
-- Android Studio + an Android Emulator (**required** target platform for this assignment)
+- Android Studio + an Android Emulator (**required** target platform for this project)
 - Xcode + iOS Simulator (optional — not required)
 - The backend running locally (see [`pulsecrypto-backend`](../pulsecrypto-backend))
 
@@ -69,7 +69,7 @@ changing either, restart Metro with `pnpm expo start --dev-client --clear`.
 no secrets. The simplest way to run everything is the backend on your own machine
 (`pnpm start` in `pulsecrypto-backend`) plus the emulator.
 
-**The owner's hosted backend (optional).** For the submission the backend also runs on a small AWS EC2
+**The owner's hosted backend (optional).** The backend also runs on a small AWS EC2
 instance (see the backend's [`docs/deployment-aws-ec2.md`](../pulsecrypto-backend/docs/deployment-aws-ec2.md))
 behind Caddy with a free DuckDNS hostname, so it is reachable over TLS at `https://pulsecrypto.duckdns.org` and
 `wss://pulsecrypto.duckdns.org` — there are no keys to request. To keep costs down the instance is **stopped
@@ -88,7 +88,7 @@ the device — see Known limitations.
 
 ## Build and run
 
-**Android Emulator** (the assignment's required target — this submission was built and exercised on a Pixel 8, API 35, emulator):
+**Android Emulator** (the project's required target — this release was built and exercised on a Pixel 8, API 35, emulator):
 
 ```bash
 pnpm expo run:android
@@ -158,7 +158,7 @@ pnpm run check:contracts   # diffs src/contracts/schemas.ts against the backend'
   and jitter — while a 404 or a malformed payload fails immediately. When retries run out, a
   localized message appears under the search field (or in Terminal's waiting state).
 - **Telemetry & Settings** + the account drawer — present in the Figma file but outside the
-  assignment's functional requirements; built at full visual fidelity anyway (see
+  project's functional requirements; built at full visual fidelity anyway (see
   [Trade-offs](#trade-offs-considered)). WS message rate and JS-thread FPS are real, live
   measurements (the FPS gauge read 55 on the emulator with eight pairs streaming); everything else on that screen (throttling slider/toggles, drawer account
   links, memory footprint) is explicitly local UI state or a labeled placeholder, not wired
@@ -188,7 +188,7 @@ Full rationale, including options considered and rejected, lives in
 | Toggle / Slider controls | **Custom-built components**, not RN's `Switch` / a native slider library                                                  | Neither could be styled to match Figma's exact dimensions (track thickness, thumb size); built from scratch with reanimated (Toggle) and `PanResponder` + reanimated (Slider), no extra native dependency for the latter                  |
 | Styling                  | **`StyleSheet.create()`**, not NativeWind/Tailwind                                                                        | Performance-first choice — StyleSheet avoids the runtime style-resolution overhead a Tailwind-in-RN approach adds, which matters at this update cadence                                                                                   |
 
-**Performance work** (the assignment's explicit "responsive UI under sustained updates"
+**Performance work** (the project's explicit "responsive UI under sustained updates"
 requirement):
 
 - **Cached `Intl.NumberFormat`/`Intl.DateTimeFormat` instances** instead of constructing one
@@ -221,13 +221,13 @@ mirrored contract; a malformed message is dropped, never applied to the store.
 
 - The backend is reachable from the device/emulator during local development (see the
   Android Emulator networking note under [Setup](#setup)).
-- Five required pairs satisfy the assignment's mandatory scope; the backend's dynamically
+- Five required pairs satisfy the project's mandatory scope; the backend's dynamically
   resolved additional pairs are a bonus the UI handles gracefully (no hardcoded pair count
   anywhere in the mobile codebase).
 - English is the only shipped translation; the localization infrastructure (namespaced
   strings, `Intl`-based formatting, an MMKV language-override lookup at startup) is wired so adding a
   second language is mostly a translation-file addition — but there is no in-app language picker yet.
-- The Android Emulator is the required verification target per the assignment; iOS Simulator
+- The Android Emulator is the required verification target for this project; iOS Simulator
   support exists but wasn't the primary target during development.
 
 ---
@@ -254,18 +254,17 @@ mirrored contract; a malformed message is dropped, never applied to the store.
   toward files mixing domain/data/UI with no internal structure); the trade is a small
   amount of deeper nesting, well handled by IDE tooling.
 - **Building the full localization mechanism while shipping only one language** — one
-  dependency and upfront setup cost for infrastructure that, strictly by the assignment's own
+  dependency and upfront setup cost for infrastructure that, strictly by the project's own
   requirements, isn't tested — accepted because retrofitting it later onto hardcoded strings
   is the more expensive path.
 - **Custom Toggle and Slider components instead of native controls** — more code to write and
   maintain than `Switch`/`@react-native-community/slider`, in exchange for pixel-accurate
   control over dimensions neither native control exposed as a style prop.
 - **Building the out-of-scope Telemetry/Settings screen and account drawer at full fidelity**
-  — real implementation effort on UI the assignment doesn't ask for and doesn't functionally
-  test, because the Figma reference includes them and a submission that visibly matches its
-  own referenced mockup was judged worth more for this specific evaluation than a strictly
-  scope-minimal one. Every control with no real backing system is explicitly documented as
-  local UI state only, not left for a reviewer to discover unexplained.
+  — real implementation effort on UI the requirements don't ask for, because the Figma
+  reference includes them and an app that visibly matches its own referenced mockup was
+  judged worth more than a strictly scope-minimal one. Every control with no real backing system is explicitly documented as
+  local UI state only, not left for a reader to discover unexplained.
 - **StyleSheet.create() over NativeWind/Tailwind** — after evaluating NativeWind directly, its
   runtime style-resolution overhead was judged a poorer fit for a performance-first app
   updating at a 100ms cadence than React Native's own StyleSheet, which resolves ahead of
@@ -275,7 +274,7 @@ mirrored contract; a malformed message is dropped, never applied to the store.
 
 ## Known limitations
 
-Stated plainly rather than left for a reviewer to find:
+Stated plainly rather than left for a reader to find:
 
 - **Tests are unit tests only** (Jest: WebSocket state machine, stores, repositories, formatting,
   the watchlist merge/search logic). `@testing-library/react-native` is installed but there are
@@ -322,10 +321,10 @@ Concretely:
   stat card was briefly changed to sit flush against the card's corner, then reverted once a
   higher-resolution reference showed it was meant to float with inset margin all along. Both
   corrections are recorded in the git history, not silently overwritten.
-- **A real functional bug was found and fixed against the assignment's own stated
+- **A real functional bug was found and fixed against the project's own stated
   requirement**: on a fresh install with the backend unreachable, the Terminal screen got
   stuck on a bare loading spinner with no navigation chrome at all — traced directly to the
-  assignment's explicit offline-behavior requirement, not treated as a cosmetic issue.
+  project's explicit offline-behavior requirement, not treated as a cosmetic issue.
 - **Performance work was driven by a reported symptom** (observed FPS drops under live
   backend traffic, sometimes to zero), diagnosed to two concrete root causes — uncached
   `Intl` formatter construction and one React commit per WebSocket message rather than per
@@ -337,7 +336,7 @@ Concretely:
   change, all reviewed and committed by the developer. Claude Code pushed to a remote or merged
   a branch only when explicitly told to for that change.
 - **Human review and correction**: the developer directed every scope decision recorded in
-  this document (including whether to build the assignment-out-of-scope Telemetry/Settings
+  this document (including whether to build the out-of-scope Telemetry/Settings
   screen and drawer at all), caught and corrected visual/behavioral misreadings across many
   iterations as described above, and made the final call on every trade-off in this README
   and the ADR.

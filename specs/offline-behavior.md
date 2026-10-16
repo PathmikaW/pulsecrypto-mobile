@@ -1,6 +1,6 @@
 # Offline / Connection-State Behavior — Implementation Spec
 
-Source: ADR-M6, ADR-M7. Implements the assignment's offline-behavior requirement:
+Source: ADR-M6, ADR-M7. Implements the project's offline-behavior requirement:
 display connection status, keep showing last-known data, reconnect automatically.
 
 ## Connection state machine
@@ -81,7 +81,7 @@ socket.onmessage = (event) => {
 };
 ```
 
-This is the concrete mechanism behind the assignment's "appropriate error handling"
+This is the concrete mechanism behind the project's "appropriate error handling"
 non-functional requirement on the live-data path — a malformed or unexpected payload is
 dropped silently (logged only in dev), not applied to the store and not allowed to throw
 and take down the socket handler.
