@@ -40,8 +40,8 @@ interface PairState {
 
 ## `MarketUpdate` (the WebSocket broadcast payload — one per pair, per tick)
 
-This is the wire format. Field names and shape match the assignment's example payload
-exactly, plus `lastUpdatedAt` which the assignment leaves to our discretion and this
+This is the wire format. Field names and shape match the project's example payload
+exactly, plus `lastUpdatedAt` which the requirements leave to our discretion and this
 project requires (ADR §12.2).
 
 ```typescript

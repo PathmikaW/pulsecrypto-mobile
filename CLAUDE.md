@@ -61,10 +61,10 @@ Design tokens (colors, typography, spacing, radii) are **already extracted and v
 **Screen scope is five screens, not four (ADR-M10) — read `specs/mobile-screens.md` before
 building any screen.** The Figma file only designs two screens ("Trading Terminal" →
 `Terminal`/Market Details, and "Telemetry & Settings," a developer dashboard + account
-drawer that the assignment never asks for). There's no watchlist frame in Figma at all —
+drawer that the requirements never ask for). There's no watchlist frame in Figma at all —
 `Markets`/Watchlist is designed fresh from the same tokens. The explicit, developer-made
 decision: build everything Figma provides at full fidelity (including the
-out-of-assignment-scope Telemetry/Settings dashboard and account drawer), and build Markets
+out-of-scope Telemetry/Settings dashboard and account drawer), and build Markets
 fresh to match. Controls with no backend behind them (throttling slider/toggles, API
 Keys/Security/Trade History/Sign Out) are local UI state only, documented as display-only
 in the README — don't silently wire them to nothing and also don't silently invent a
@@ -92,11 +92,11 @@ fetch) are normal work and fine to run directly —
 the boundary is specifically the _initial scaffold and prebuild_, not every subsequent
 install. See ADR-X5 in the ADR for the full reasoning.
 
-## Evaluation context — why "correct-enough" isn't the bar here
+## Quality bar — why "correct-enough" isn't the bar here
 
-This is a practical assignment. The reviewer is
-evaluating the architecture, the specific decisions made and their rationale, and code
-quality — not only whether the app runs. Concretely, this means:
+This project is meant to show engineering quality in public: the architecture, the
+specific decisions made and their rationale, and code quality matter as much as whether
+the app runs. Concretely, this means:
 
 - Follow the stated architecture **literally**, not "in spirit." A feature reaching into
   another feature's internals instead of its barrel export, or a reintroduced-and-rejected
@@ -105,11 +105,11 @@ quality — not only whether the app runs. Concretely, this means:
   Zustand selector usage, idiomatic TanStack Query cache config, idiomatic React Native
   Testing Library queries) rather than code that merely works. If you're unsure what's
   idiomatic for a given library, say so rather than guessing.
-- Never take a shortcut that would make the code or the decision look worse under review
+- Never take a shortcut that would make the code or the decision look worse to a reader
   to save time now — flag the tension and ask instead of silently choosing "fast" over
   "correct as specified."
 - Tests and specs are not optional scaffolding to skip when a deadline feels close — the
-  testing strategy itself is part of what's being evaluated.
+  testing strategy itself is part of what this project is meant to show.
 
 ## Authority, in order
 
@@ -208,7 +208,8 @@ this is what avoids a flash of incorrect state on launch.
   30s) for reconnection.
 - Liveness is inferred from **broadcast silence**, not a ping/pong exchange:
   `STALE_CONNECTION_TIMEOUT_MS` (~1000ms default) is documented as a multiple of the
-  backend's `BROADCAST_INTERVAL_MS` (`MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS`).
+  backend's `BROADCAST_INTERVAL_MS` (`MAX_CONSECUTIVE_SKIPS × BROADCAST_INTERVAL_MS`), using
+  hand-copied backend defaults — it is not the backend's eviction budget (ADR-M6).
   If no message arrives within that window, treat the connection as dead.
 - **Do not add a client-side ping/pong message.** This was evaluated and explicitly
   rejected — the data stream already answers "is this connection alive." Adding one is
@@ -218,7 +219,7 @@ this is what avoids a flash of incorrect state on launch.
 - **Validate every incoming message** against the mirrored Zod schema in
   `src/contracts/schemas.ts` before it reaches `marketStore.updatePair`. A message that
   fails validation is logged (dev-only) and dropped, never thrown or applied — this is what
-  satisfies the assignment's "appropriate error handling" requirement on the live-data path
+  satisfies the project's "appropriate error handling" requirement on the live-data path
   (ADR-M6, v8.1 addition).
 
 **Offline strategy (ADR-M7):** stale data stays visible when disconnected (don't clear the
@@ -232,7 +233,7 @@ screen — no per-screen boundaries. A rendering bug degrades to a recoverable f
 a native crash. No new dependency required for this.
 
 **Target platform — Android Emulator is the required, not optional, verification target
-(assignment §1).** Build and run via `npx expo run:android` and confirm the app end-to-end
+(project requirement).** Build and run via `npx expo run:android` and confirm the app end-to-end
 on the Android Emulator before considering any mobile phase "done" — don't defer this to
 just before recording the screen capture. iOS Simulator support is optional and doesn't
 substitute for it.
@@ -260,8 +261,8 @@ src/
 │   │                      Includes AccountDrawer.tsx — per Figma, the account drawer is
 │   │                      nested inside the Trading Terminal frame, opened from Terminal's
 │   │                      own hamburger button, NOT part of telemetry-settings/.
-│   ├── telemetry-settings/ # "Telemetry & Settings" screen only (presentation only). Not an
-│   │                          assignment requirement — built per ADR-M10's explicit fidelity
+│   ├── telemetry-settings/ # "Telemetry & Settings" screen only (presentation only). Not a
+│   │                          functional requirement — built per ADR-M10's explicit fidelity
 │   │                          decision. Real data where cheap (WS rate, FPS), display-only
 │   │                          elsewhere — see specs/mobile-screens.md.
 │   └── favourites/    # domain/ + data/ + presentation/ — genuinely feature-scoped.
